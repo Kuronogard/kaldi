@@ -1,0 +1,14 @@
+steps/train_quick.sh --cmd run.pl 7000 150000 data/train_960 data/lang exp/tri5b_ali_960 exp/tri6b
+steps/train_quick.sh: feature type is lda
+steps/train_quick.sh: using transforms from exp/tri5b_ali_960
+steps/train_quick.sh: accumulating tree stats
+steps/train_quick.sh: Getting questions for tree clustering.
+steps/train_quick.sh: Building the tree
+steps/train_quick.sh: Initializing the model
+steps/train_quick.sh: mixing up old model.
+steps/train_quick.sh: converting old alignments
+steps/train_quick.sh: compiling training graphs
+steps/train_quick.sh: pass 1
+steps/train_quick.sh: pass 2
+steps/train_quick.sh: pass 3
+steps/train_quick.sh: pass 4

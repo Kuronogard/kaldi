@@ -1,0 +1,576 @@
+
+nnet5a_clean_100_gpu
+===============
+
+
+dev_clean
+--------------
+SPLIT 1, frames : 85565 
+          tgsmall:      decode.1.log: [  575] secs  
+            tgmed:   rescorelm.1.log: [   63] secs  
+      tgmed_carpa:   rescorelm.1.log: [   18] secs  
+          tglarge:   rescorelm.1.log: [   20] secs  
+          fglarge:   rescorelm.1.log: [   22] secs  
+       rnnlm-lstm:   rescorelm.1.log: [    0] secs TEST NOT DONE
+SPLIT 2, frames : 106927 
+          tgsmall:      decode.2.log: [  674] secs  
+            tgmed:   rescorelm.2.log: [   47] secs  
+      tgmed_carpa:   rescorelm.2.log: [   16] secs  
+          tglarge:   rescorelm.2.log: [   18] secs  
+          fglarge:   rescorelm.2.log: [   19] secs  
+       rnnlm-lstm:   rescorelm.2.log: [    0] secs TEST NOT DONE
+SPLIT 3, frames : 97708 
+          tgsmall:      decode.3.log: [  621] secs  
+            tgmed:   rescorelm.3.log: [   61] secs  
+      tgmed_carpa:   rescorelm.3.log: [   18] secs  
+          tglarge:   rescorelm.3.log: [   19] secs  
+          fglarge:   rescorelm.3.log: [   21] secs  
+       rnnlm-lstm:   rescorelm.3.log: [    0] secs TEST NOT DONE
+SPLIT 4, frames : 76965 
+          tgsmall:      decode.4.log: [  428] secs  
+            tgmed:   rescorelm.4.log: [   37] secs  
+      tgmed_carpa:   rescorelm.4.log: [   13] secs  
+          tglarge:   rescorelm.4.log: [   14] secs  
+          fglarge:   rescorelm.4.log: [   15] secs  
+       rnnlm-lstm:   rescorelm.4.log: [    0] secs TEST NOT DONE
+SPLIT 5, frames : 116322 
+          tgsmall:      decode.5.log: [  641] secs  
+            tgmed:   rescorelm.5.log: [   42] secs  
+      tgmed_carpa:   rescorelm.5.log: [   15] secs  
+          tglarge:   rescorelm.5.log: [   15] secs  
+          fglarge:   rescorelm.5.log: [   17] secs  
+       rnnlm-lstm:   rescorelm.5.log: [    0] secs TEST NOT DONE
+SPLIT 6, frames : 76778 
+          tgsmall:      decode.6.log: [  440] secs  
+            tgmed:   rescorelm.6.log: [   35] secs  
+      tgmed_carpa:   rescorelm.6.log: [   13] secs  
+          tglarge:   rescorelm.6.log: [   14] secs  
+          fglarge:   rescorelm.6.log: [   15] secs  
+       rnnlm-lstm:   rescorelm.6.log: [    0] secs TEST NOT DONE
+SPLIT 7, frames : 82223 
+          tgsmall:      decode.7.log: [  451] secs  
+            tgmed:   rescorelm.7.log: [   39] secs  
+      tgmed_carpa:   rescorelm.7.log: [   12] secs  
+          tglarge:   rescorelm.7.log: [   14] secs  
+          fglarge:   rescorelm.7.log: [   15] secs  
+       rnnlm-lstm:   rescorelm.7.log: [    0] secs TEST NOT DONE
+SPLIT 8, frames : 130787 
+          tgsmall:      decode.8.log: [  814] secs  
+            tgmed:   rescorelm.8.log: [   58] secs  
+      tgmed_carpa:   rescorelm.8.log: [   19] secs  
+          tglarge:   rescorelm.8.log: [   20] secs  
+          fglarge:   rescorelm.8.log: [   23] secs  
+       rnnlm-lstm:   rescorelm.8.log: [    0] secs TEST NOT DONE
+SPLIT 9, frames : 95983 
+          tgsmall:      decode.9.log: [  637] secs  
+            tgmed:   rescorelm.9.log: [   66] secs  
+      tgmed_carpa:   rescorelm.9.log: [   16] secs  
+          tglarge:   rescorelm.9.log: [   17] secs  
+          fglarge:   rescorelm.9.log: [   19] secs  
+       rnnlm-lstm:   rescorelm.9.log: [    0] secs TEST NOT DONE
+SPLIT 10, frames : 160690 
+          tgsmall:     decode.10.log: [  911] secs  
+            tgmed:  rescorelm.10.log: [   78] secs  
+      tgmed_carpa:  rescorelm.10.log: [   23] secs  
+          tglarge:  rescorelm.10.log: [   25] secs  
+          fglarge:  rescorelm.10.log: [   26] secs  
+       rnnlm-lstm:  rescorelm.10.log: [    0] secs TEST NOT DONE
+SPLIT 11, frames : 131132 
+          tgsmall:     decode.11.log: [  877] secs  
+            tgmed:  rescorelm.11.log: [   67] secs  
+      tgmed_carpa:  rescorelm.11.log: [   23] secs  
+          tglarge:  rescorelm.11.log: [   23] secs  
+          fglarge:  rescorelm.11.log: [   24] secs  
+       rnnlm-lstm:  rescorelm.11.log: [    0] secs TEST NOT DONE
+SPLIT 12, frames : 112924 
+          tgsmall:     decode.12.log: [  763] secs  
+            tgmed:  rescorelm.12.log: [   59] secs  
+      tgmed_carpa:  rescorelm.12.log: [   20] secs  
+          tglarge:  rescorelm.12.log: [   21] secs  
+          fglarge:  rescorelm.12.log: [   22] secs  
+       rnnlm-lstm:  rescorelm.12.log: [    0] secs TEST NOT DONE
+SPLIT 13, frames : 79954 
+          tgsmall:     decode.13.log: [  416] secs  
+            tgmed:  rescorelm.13.log: [   36] secs  
+      tgmed_carpa:  rescorelm.13.log: [   12] secs  
+          tglarge:  rescorelm.13.log: [   14] secs  
+          fglarge:  rescorelm.13.log: [   15] secs  
+       rnnlm-lstm:  rescorelm.13.log: [    0] secs TEST NOT DONE
+SPLIT 14, frames : 96253 
+          tgsmall:     decode.14.log: [  522] secs  
+            tgmed:  rescorelm.14.log: [   43] secs  
+      tgmed_carpa:  rescorelm.14.log: [   15] secs  
+          tglarge:  rescorelm.14.log: [   16] secs  
+          fglarge:  rescorelm.14.log: [   17] secs  
+       rnnlm-lstm:  rescorelm.14.log: [    0] secs TEST NOT DONE
+SPLIT 15, frames : 77854 
+          tgsmall:     decode.15.log: [  560] secs  
+            tgmed:  rescorelm.15.log: [   49] secs  
+      tgmed_carpa:  rescorelm.15.log: [   18] secs  
+          tglarge:  rescorelm.15.log: [   18] secs  
+          fglarge:  rescorelm.15.log: [   20] secs  
+       rnnlm-lstm:  rescorelm.15.log: [    0] secs TEST NOT DONE
+SPLIT 16, frames : 81372 
+          tgsmall:     decode.16.log: [  461] secs  
+            tgmed:  rescorelm.16.log: [   46] secs  
+      tgmed_carpa:  rescorelm.16.log: [   13] secs  
+          tglarge:  rescorelm.16.log: [   14] secs  
+          fglarge:  rescorelm.16.log: [   14] secs  
+       rnnlm-lstm:  rescorelm.16.log: [    0] secs TEST NOT DONE
+SPLIT 17, frames : 83842 
+          tgsmall:     decode.17.log: [  445] secs  
+            tgmed:  rescorelm.17.log: [   41] secs  
+      tgmed_carpa:  rescorelm.17.log: [   13] secs  
+          tglarge:  rescorelm.17.log: [   13] secs  
+          fglarge:  rescorelm.17.log: [   14] secs  
+       rnnlm-lstm:  rescorelm.17.log: [    0] secs TEST NOT DONE
+SPLIT 18, frames : 66144 
+          tgsmall:     decode.18.log: [  343] secs  
+            tgmed:  rescorelm.18.log: [   22] secs  
+      tgmed_carpa:  rescorelm.18.log: [   10] secs  
+          tglarge:  rescorelm.18.log: [    9] secs  
+          fglarge:  rescorelm.18.log: [   10] secs  
+       rnnlm-lstm:  rescorelm.18.log: [    0] secs TEST NOT DONE
+SPLIT 19, frames : 78855 
+          tgsmall:     decode.19.log: [  327] secs  
+            tgmed:  rescorelm.19.log: [   23] secs  
+      tgmed_carpa:  rescorelm.19.log: [    8] secs  
+          tglarge:  rescorelm.19.log: [    9] secs  
+          fglarge:  rescorelm.19.log: [    9] secs  
+       rnnlm-lstm:  rescorelm.19.log: [    0] secs TEST NOT DONE
+SPLIT 20, frames : 96507 
+          tgsmall:     decode.20.log: [  365] secs  
+            tgmed:  rescorelm.20.log: [   30] secs  
+      tgmed_carpa:  rescorelm.20.log: [   11] secs  
+          tglarge:  rescorelm.20.log: [   11] secs  
+          fglarge:  rescorelm.20.log: [   12] secs  
+       rnnlm-lstm:  rescorelm.20.log: [    0] secs TEST NOT DONE
+
+test_clean
+--------------
+SPLIT 1, frames : 105191 
+          tgsmall:      decode.1.log: [  581] secs  
+            tgmed:   rescorelm.1.log: [   45] secs  
+      tgmed_carpa:   rescorelm.1.log: [   15] secs  
+          tglarge:   rescorelm.1.log: [   17] secs  
+          fglarge:   rescorelm.1.log: [   18] secs  
+       rnnlm-lstm:   rescorelm.1.log: [ 1451] secs  
+SPLIT 2, frames : 111159 
+          tgsmall:      decode.2.log: [  685] secs  
+            tgmed:   rescorelm.2.log: [   50] secs  
+      tgmed_carpa:   rescorelm.2.log: [   17] secs  
+          tglarge:   rescorelm.2.log: [   18] secs  
+          fglarge:   rescorelm.2.log: [   19] secs  
+       rnnlm-lstm:   rescorelm.2.log: [ 1878] secs  
+SPLIT 3, frames : 99739 
+          tgsmall:      decode.3.log: [  523] secs  
+            tgmed:   rescorelm.3.log: [   44] secs  
+      tgmed_carpa:   rescorelm.3.log: [   14] secs  
+          tglarge:   rescorelm.3.log: [   15] secs  
+          fglarge:   rescorelm.3.log: [   17] secs  
+       rnnlm-lstm:   rescorelm.3.log: [ 1066] secs  
+SPLIT 4, frames : 70887 
+          tgsmall:      decode.4.log: [  421] secs  
+            tgmed:   rescorelm.4.log: [   37] secs  
+      tgmed_carpa:   rescorelm.4.log: [   14] secs  
+          tglarge:   rescorelm.4.log: [   15] secs  
+          fglarge:   rescorelm.4.log: [   16] secs  
+       rnnlm-lstm:   rescorelm.4.log: [ 1487] secs  
+SPLIT 5, frames : 114148 
+          tgsmall:      decode.5.log: [  694] secs  
+            tgmed:   rescorelm.5.log: [   48] secs  
+      tgmed_carpa:   rescorelm.5.log: [   17] secs  
+          tglarge:   rescorelm.5.log: [   18] secs  
+          fglarge:   rescorelm.5.log: [   20] secs  
+       rnnlm-lstm:   rescorelm.5.log: [ 1822] secs  
+SPLIT 6, frames : 69002 
+          tgsmall:      decode.6.log: [  451] secs  
+            tgmed:   rescorelm.6.log: [   40] secs  
+      tgmed_carpa:   rescorelm.6.log: [   14] secs  
+          tglarge:   rescorelm.6.log: [   15] secs  
+          fglarge:   rescorelm.6.log: [   16] secs  
+       rnnlm-lstm:   rescorelm.6.log: [ 1418] secs  
+SPLIT 7, frames : 86750 
+          tgsmall:      decode.7.log: [  581] secs  
+            tgmed:   rescorelm.7.log: [   49] secs  
+      tgmed_carpa:   rescorelm.7.log: [   17] secs  
+          tglarge:   rescorelm.7.log: [   19] secs  
+          fglarge:   rescorelm.7.log: [   19] secs  
+       rnnlm-lstm:   rescorelm.7.log: [ 1823] secs  
+SPLIT 8, frames : 116633 
+          tgsmall:      decode.8.log: [  843] secs  
+            tgmed:   rescorelm.8.log: [   77] secs  
+      tgmed_carpa:   rescorelm.8.log: [   23] secs  
+          tglarge:   rescorelm.8.log: [   24] secs  
+          fglarge:   rescorelm.8.log: [   26] secs  
+       rnnlm-lstm:   rescorelm.8.log: [ 2989] secs  
+SPLIT 9, frames : 126270 
+          tgsmall:      decode.9.log: [  852] secs  
+            tgmed:   rescorelm.9.log: [   63] secs  
+      tgmed_carpa:   rescorelm.9.log: [   22] secs  
+          tglarge:   rescorelm.9.log: [   23] secs  
+          fglarge:   rescorelm.9.log: [   25] secs  
+       rnnlm-lstm:   rescorelm.9.log: [ 3070] secs  
+SPLIT 10, frames : 87687 
+          tgsmall:     decode.10.log: [  543] secs  
+            tgmed:  rescorelm.10.log: [   45] secs  
+      tgmed_carpa:  rescorelm.10.log: [   15] secs  
+          tglarge:  rescorelm.10.log: [   15] secs  
+          fglarge:  rescorelm.10.log: [   18] secs  
+       rnnlm-lstm:  rescorelm.10.log: [ 1222] secs  
+SPLIT 11, frames : 106552 
+          tgsmall:     decode.11.log: [  739] secs  
+            tgmed:  rescorelm.11.log: [   65] secs  
+      tgmed_carpa:  rescorelm.11.log: [   21] secs  
+          tglarge:  rescorelm.11.log: [   21] secs  
+          fglarge:  rescorelm.11.log: [   24] secs  
+       rnnlm-lstm:  rescorelm.11.log: [ 2620] secs  
+SPLIT 12, frames : 64958 
+          tgsmall:     decode.12.log: [  441] secs  
+            tgmed:  rescorelm.12.log: [   54] secs  
+      tgmed_carpa:  rescorelm.12.log: [   16] secs  
+          tglarge:  rescorelm.12.log: [   16] secs  
+          fglarge:  rescorelm.12.log: [   17] secs  
+       rnnlm-lstm:  rescorelm.12.log: [ 1993] secs  
+SPLIT 13, frames : 99779 
+          tgsmall:     decode.13.log: [  688] secs  
+            tgmed:  rescorelm.13.log: [   53] secs  
+      tgmed_carpa:  rescorelm.13.log: [   18] secs  
+          tglarge:  rescorelm.13.log: [   20] secs  
+          fglarge:  rescorelm.13.log: [   20] secs  
+       rnnlm-lstm:  rescorelm.13.log: [ 2174] secs  
+SPLIT 14, frames : 97759 
+          tgsmall:     decode.14.log: [  606] secs  
+            tgmed:  rescorelm.14.log: [   64] secs  
+      tgmed_carpa:  rescorelm.14.log: [   20] secs  
+          tglarge:  rescorelm.14.log: [   21] secs  
+          fglarge:  rescorelm.14.log: [   23] secs  
+       rnnlm-lstm:  rescorelm.14.log: [ 3177] secs  
+SPLIT 15, frames : 82030 
+          tgsmall:     decode.15.log: [  533] secs  
+            tgmed:  rescorelm.15.log: [   44] secs  
+      tgmed_carpa:  rescorelm.15.log: [   14] secs  
+          tglarge:  rescorelm.15.log: [   15] secs  
+          fglarge:  rescorelm.15.log: [   15] secs  
+       rnnlm-lstm:  rescorelm.15.log: [ 1391] secs  
+SPLIT 16, frames : 87395 
+          tgsmall:     decode.16.log: [  475] secs  
+            tgmed:  rescorelm.16.log: [   31] secs  
+      tgmed_carpa:  rescorelm.16.log: [   12] secs  
+          tglarge:  rescorelm.16.log: [   12] secs  
+          fglarge:  rescorelm.16.log: [   12] secs  
+       rnnlm-lstm:  rescorelm.16.log: [  736] secs  
+SPLIT 17, frames : 74466 
+          tgsmall:     decode.17.log: [  416] secs  
+            tgmed:  rescorelm.17.log: [   39] secs  
+      tgmed_carpa:  rescorelm.17.log: [   12] secs  
+          tglarge:  rescorelm.17.log: [   13] secs  
+          fglarge:  rescorelm.17.log: [   12] secs  
+       rnnlm-lstm:  rescorelm.17.log: [ 1631] secs  
+SPLIT 18, frames : 147710 
+          tgsmall:     decode.18.log: [  635] secs  
+            tgmed:  rescorelm.18.log: [   37] secs  
+      tgmed_carpa:  rescorelm.18.log: [   13] secs  
+          tglarge:  rescorelm.18.log: [   14] secs  
+          fglarge:  rescorelm.18.log: [   14] secs  
+       rnnlm-lstm:  rescorelm.18.log: [ 1429] secs  
+SPLIT 19, frames : 96230 
+          tgsmall:     decode.19.log: [  401] secs  
+            tgmed:  rescorelm.19.log: [   34] secs  
+      tgmed_carpa:  rescorelm.19.log: [   12] secs  
+          tglarge:  rescorelm.19.log: [   12] secs  
+          fglarge:  rescorelm.19.log: [   14] secs  
+       rnnlm-lstm:  rescorelm.19.log: [ 1552] secs  
+SPLIT 20, frames : 96281 
+          tgsmall:     decode.20.log: [  415] secs  
+            tgmed:  rescorelm.20.log: [   40] secs  
+      tgmed_carpa:  rescorelm.20.log: [   13] secs  
+          tglarge:  rescorelm.20.log: [   14] secs  
+          fglarge:  rescorelm.20.log: [   15] secs  
+       rnnlm-lstm:  rescorelm.20.log: [ 1923] secs  
+
+dev_other
+--------------
+SPLIT 1, frames : 75462 
+          tgsmall:      decode.1.log: [  654] secs  
+            tgmed:   rescorelm.1.log: [   89] secs  
+      tgmed_carpa:   rescorelm.1.log: [   27] secs  
+          tglarge:   rescorelm.1.log: [   29] secs  
+          fglarge:   rescorelm.1.log: [   32] secs  
+       rnnlm-lstm:   rescorelm.1.log: [    0] secs TEST NOT DONE
+SPLIT 2, frames : 89109 
+          tgsmall:      decode.2.log: [  974] secs  
+            tgmed:   rescorelm.2.log: [  193] secs  
+      tgmed_carpa:   rescorelm.2.log: [   57] secs  
+          tglarge:   rescorelm.2.log: [   65] secs  
+          fglarge:   rescorelm.2.log: [   72] secs  
+       rnnlm-lstm:   rescorelm.2.log: [    0] secs TEST NOT DONE
+SPLIT 3, frames : 86858 
+          tgsmall:      decode.3.log: [  992] secs  
+            tgmed:   rescorelm.3.log: [  172] secs  
+      tgmed_carpa:   rescorelm.3.log: [   59] secs  
+          tglarge:   rescorelm.3.log: [   69] secs  
+          fglarge:   rescorelm.3.log: [   76] secs  
+       rnnlm-lstm:   rescorelm.3.log: [    0] secs TEST NOT DONE
+SPLIT 4, frames : 76096 
+          tgsmall:      decode.4.log: [  983] secs  
+            tgmed:   rescorelm.4.log: [  409] secs  
+      tgmed_carpa:   rescorelm.4.log: [   62] secs  
+          tglarge:   rescorelm.4.log: [   72] secs  
+          fglarge:   rescorelm.4.log: [   83] secs  
+       rnnlm-lstm:   rescorelm.4.log: [    0] secs TEST NOT DONE
+SPLIT 5, frames : 120475 
+          tgsmall:      decode.5.log: [ 1263] secs  
+            tgmed:   rescorelm.5.log: [  223] secs  
+      tgmed_carpa:   rescorelm.5.log: [   72] secs  
+          tglarge:   rescorelm.5.log: [   78] secs  
+          fglarge:   rescorelm.5.log: [   86] secs  
+       rnnlm-lstm:   rescorelm.5.log: [    0] secs TEST NOT DONE
+SPLIT 6, frames : 88769 
+          tgsmall:      decode.6.log: [  940] secs  
+            tgmed:   rescorelm.6.log: [  154] secs  
+      tgmed_carpa:   rescorelm.6.log: [   53] secs  
+          tglarge:   rescorelm.6.log: [   60] secs  
+          fglarge:   rescorelm.6.log: [   68] secs  
+       rnnlm-lstm:   rescorelm.6.log: [    0] secs TEST NOT DONE
+SPLIT 7, frames : 111127 
+          tgsmall:      decode.7.log: [ 1026] secs  
+            tgmed:   rescorelm.7.log: [  152] secs  
+      tgmed_carpa:   rescorelm.7.log: [   43] secs  
+          tglarge:   rescorelm.7.log: [   48] secs  
+          fglarge:   rescorelm.7.log: [   50] secs  
+       rnnlm-lstm:   rescorelm.7.log: [    0] secs TEST NOT DONE
+SPLIT 8, frames : 94850 
+          tgsmall:      decode.8.log: [ 1152] secs  
+            tgmed:   rescorelm.8.log: [  263] secs  
+      tgmed_carpa:   rescorelm.8.log: [   64] secs  
+          tglarge:   rescorelm.8.log: [   71] secs  
+          fglarge:   rescorelm.8.log: [   83] secs  
+       rnnlm-lstm:   rescorelm.8.log: [    0] secs TEST NOT DONE
+SPLIT 9, frames : 59913 
+          tgsmall:      decode.9.log: [  464] secs  
+            tgmed:   rescorelm.9.log: [   47] secs  
+      tgmed_carpa:   rescorelm.9.log: [   16] secs  
+          tglarge:   rescorelm.9.log: [   17] secs  
+          fglarge:   rescorelm.9.log: [   17] secs  
+       rnnlm-lstm:   rescorelm.9.log: [    0] secs TEST NOT DONE
+SPLIT 10, frames : 120329 
+          tgsmall:     decode.10.log: [ 1146] secs  
+            tgmed:  rescorelm.10.log: [  249] secs  
+      tgmed_carpa:  rescorelm.10.log: [   62] secs  
+          tglarge:  rescorelm.10.log: [   71] secs  
+          fglarge:  rescorelm.10.log: [   77] secs  
+       rnnlm-lstm:  rescorelm.10.log: [    0] secs TEST NOT DONE
+SPLIT 11, frames : 121828 
+          tgsmall:     decode.11.log: [ 1247] secs  
+            tgmed:  rescorelm.11.log: [  212] secs  
+      tgmed_carpa:  rescorelm.11.log: [   69] secs  
+          tglarge:  rescorelm.11.log: [   80] secs  
+          fglarge:  rescorelm.11.log: [   88] secs  
+       rnnlm-lstm:  rescorelm.11.log: [    0] secs TEST NOT DONE
+SPLIT 12, frames : 90261 
+          tgsmall:     decode.12.log: [  876] secs  
+            tgmed:  rescorelm.12.log: [  113] secs  
+      tgmed_carpa:  rescorelm.12.log: [   41] secs  
+          tglarge:  rescorelm.12.log: [   45] secs  
+          fglarge:  rescorelm.12.log: [   46] secs  
+       rnnlm-lstm:  rescorelm.12.log: [    0] secs TEST NOT DONE
+SPLIT 13, frames : 90041 
+          tgsmall:     decode.13.log: [  973] secs  
+            tgmed:  rescorelm.13.log: [  146] secs  
+      tgmed_carpa:  rescorelm.13.log: [   52] secs  
+          tglarge:  rescorelm.13.log: [   56] secs  
+          fglarge:  rescorelm.13.log: [   63] secs  
+       rnnlm-lstm:  rescorelm.13.log: [    0] secs TEST NOT DONE
+SPLIT 14, frames : 84616 
+          tgsmall:     decode.14.log: [ 1107] secs  
+            tgmed:  rescorelm.14.log: [  249] secs  
+      tgmed_carpa:  rescorelm.14.log: [   67] secs  
+          tglarge:  rescorelm.14.log: [   75] secs  
+          fglarge:  rescorelm.14.log: [   82] secs  
+       rnnlm-lstm:  rescorelm.14.log: [    0] secs TEST NOT DONE
+SPLIT 15, frames : 86858 
+          tgsmall:     decode.15.log: [ 1126] secs  
+            tgmed:  rescorelm.15.log: [  245] secs  
+      tgmed_carpa:  rescorelm.15.log: [   66] secs  
+          tglarge:  rescorelm.15.log: [   76] secs  
+          fglarge:  rescorelm.15.log: [   82] secs  
+       rnnlm-lstm:  rescorelm.15.log: [    0] secs TEST NOT DONE
+SPLIT 16, frames : 69727 
+          tgsmall:     decode.16.log: [  593] secs  
+            tgmed:  rescorelm.16.log: [  121] secs  
+      tgmed_carpa:  rescorelm.16.log: [   30] secs  
+          tglarge:  rescorelm.16.log: [   32] secs  
+          fglarge:  rescorelm.16.log: [   34] secs  
+       rnnlm-lstm:  rescorelm.16.log: [    0] secs TEST NOT DONE
+SPLIT 17, frames : 105038 
+          tgsmall:     decode.17.log: [  906] secs  
+            tgmed:  rescorelm.17.log: [  105] secs  
+      tgmed_carpa:  rescorelm.17.log: [   35] secs  
+          tglarge:  rescorelm.17.log: [   39] secs  
+          fglarge:  rescorelm.17.log: [   40] secs  
+       rnnlm-lstm:  rescorelm.17.log: [    0] secs TEST NOT DONE
+SPLIT 18, frames : 112706 
+          tgsmall:     decode.18.log: [  828] secs  
+            tgmed:  rescorelm.18.log: [  145] secs  
+      tgmed_carpa:  rescorelm.18.log: [   42] secs  
+          tglarge:  rescorelm.18.log: [   48] secs  
+          fglarge:  rescorelm.18.log: [   52] secs  
+       rnnlm-lstm:  rescorelm.18.log: [    0] secs TEST NOT DONE
+SPLIT 19, frames : 83635 
+          tgsmall:     decode.19.log: [  618] secs  
+            tgmed:  rescorelm.19.log: [   95] secs  
+      tgmed_carpa:  rescorelm.19.log: [   29] secs  
+          tglarge:  rescorelm.19.log: [   31] secs  
+          fglarge:  rescorelm.19.log: [   34] secs  
+       rnnlm-lstm:  rescorelm.19.log: [    0] secs TEST NOT DONE
+SPLIT 20, frames : 70826 
+          tgsmall:     decode.20.log: [  509] secs  
+            tgmed:  rescorelm.20.log: [   93] secs  
+      tgmed_carpa:  rescorelm.20.log: [   26] secs  
+          tglarge:  rescorelm.20.log: [   29] secs  
+          fglarge:  rescorelm.20.log: [   32] secs  
+       rnnlm-lstm:  rescorelm.20.log: [    0] secs TEST NOT DONE
+
+test_other
+--------------
+SPLIT 1, frames : 79263 
+          tgsmall:      decode.1.log: [  873] secs  
+            tgmed:   rescorelm.1.log: [  125] secs  
+      tgmed_carpa:   rescorelm.1.log: [   44] secs  
+          tglarge:   rescorelm.1.log: [   49] secs  
+          fglarge:   rescorelm.1.log: [   53] secs  
+       rnnlm-lstm:   rescorelm.1.log: [    0] secs TEST NOT DONE
+SPLIT 2, frames : 116386 
+          tgsmall:      decode.2.log: [ 1269] secs  
+            tgmed:   rescorelm.2.log: [  286] secs  
+      tgmed_carpa:   rescorelm.2.log: [   77] secs  
+          tglarge:   rescorelm.2.log: [   87] secs  
+          fglarge:   rescorelm.2.log: [   98] secs  
+       rnnlm-lstm:   rescorelm.2.log: [    0] secs TEST NOT DONE
+SPLIT 3, frames : 103938 
+          tgsmall:      decode.3.log: [ 1476] secs  
+            tgmed:   rescorelm.3.log: [  378] secs  
+      tgmed_carpa:   rescorelm.3.log: [  111] secs  
+          tglarge:   rescorelm.3.log: [  131] secs  
+          fglarge:   rescorelm.3.log: [  145] secs  
+       rnnlm-lstm:   rescorelm.3.log: [    0] secs TEST NOT DONE
+SPLIT 4, frames : 88341 
+          tgsmall:      decode.4.log: [  823] secs  
+            tgmed:   rescorelm.4.log: [  140] secs  
+      tgmed_carpa:   rescorelm.4.log: [   39] secs  
+          tglarge:   rescorelm.4.log: [   42] secs  
+          fglarge:   rescorelm.4.log: [   46] secs  
+       rnnlm-lstm:   rescorelm.4.log: [    0] secs TEST NOT DONE
+SPLIT 5, frames : 100196 
+          tgsmall:      decode.5.log: [ 1109] secs  
+            tgmed:   rescorelm.5.log: [  207] secs  
+      tgmed_carpa:   rescorelm.5.log: [   55] secs  
+          tglarge:   rescorelm.5.log: [   61] secs  
+          fglarge:   rescorelm.5.log: [   70] secs  
+       rnnlm-lstm:   rescorelm.5.log: [    0] secs TEST NOT DONE
+SPLIT 6, frames : 85535 
+          tgsmall:      decode.6.log: [  804] secs  
+            tgmed:   rescorelm.6.log: [  123] secs  
+      tgmed_carpa:   rescorelm.6.log: [   34] secs  
+          tglarge:   rescorelm.6.log: [   36] secs  
+          fglarge:   rescorelm.6.log: [   39] secs  
+       rnnlm-lstm:   rescorelm.6.log: [    0] secs TEST NOT DONE
+SPLIT 7, frames : 98616 
+          tgsmall:      decode.7.log: [ 1111] secs  
+            tgmed:   rescorelm.7.log: [  208] secs  
+      tgmed_carpa:   rescorelm.7.log: [   61] secs  
+          tglarge:   rescorelm.7.log: [   68] secs  
+          fglarge:   rescorelm.7.log: [   77] secs  
+       rnnlm-lstm:   rescorelm.7.log: [    0] secs TEST NOT DONE
+SPLIT 8, frames : 92190 
+          tgsmall:      decode.8.log: [  977] secs  
+            tgmed:   rescorelm.8.log: [  186] secs  
+      tgmed_carpa:   rescorelm.8.log: [   50] secs  
+          tglarge:   rescorelm.8.log: [   58] secs  
+          fglarge:   rescorelm.8.log: [   65] secs  
+       rnnlm-lstm:   rescorelm.8.log: [    0] secs TEST NOT DONE
+SPLIT 9, frames : 104152 
+          tgsmall:      decode.9.log: [ 1028] secs  
+            tgmed:   rescorelm.9.log: [  164] secs  
+      tgmed_carpa:   rescorelm.9.log: [   43] secs  
+          tglarge:   rescorelm.9.log: [   48] secs  
+          fglarge:   rescorelm.9.log: [   50] secs  
+       rnnlm-lstm:   rescorelm.9.log: [    0] secs TEST NOT DONE
+SPLIT 10, frames : 77962 
+          tgsmall:     decode.10.log: [  735] secs  
+            tgmed:  rescorelm.10.log: [  103] secs  
+      tgmed_carpa:  rescorelm.10.log: [   30] secs  
+          tglarge:  rescorelm.10.log: [   31] secs  
+          fglarge:  rescorelm.10.log: [   34] secs  
+       rnnlm-lstm:  rescorelm.10.log: [    0] secs TEST NOT DONE
+SPLIT 11, frames : 76780 
+          tgsmall:     decode.11.log: [  812] secs  
+            tgmed:  rescorelm.11.log: [  152] secs  
+      tgmed_carpa:  rescorelm.11.log: [   46] secs  
+          tglarge:  rescorelm.11.log: [   52] secs  
+          fglarge:  rescorelm.11.log: [   58] secs  
+       rnnlm-lstm:  rescorelm.11.log: [    0] secs TEST NOT DONE
+SPLIT 12, frames : 104890 
+          tgsmall:     decode.12.log: [ 1264] secs  
+            tgmed:  rescorelm.12.log: [  277] secs  
+      tgmed_carpa:  rescorelm.12.log: [   80] secs  
+          tglarge:  rescorelm.12.log: [   90] secs  
+          fglarge:  rescorelm.12.log: [  100] secs  
+       rnnlm-lstm:  rescorelm.12.log: [    0] secs TEST NOT DONE
+SPLIT 13, frames : 120694 
+          tgsmall:     decode.13.log: [ 1247] secs  
+            tgmed:  rescorelm.13.log: [  239] secs  
+      tgmed_carpa:  rescorelm.13.log: [   70] secs  
+          tglarge:  rescorelm.13.log: [   81] secs  
+          fglarge:  rescorelm.13.log: [   87] secs  
+       rnnlm-lstm:  rescorelm.13.log: [    0] secs TEST NOT DONE
+SPLIT 14, frames : 120592 
+          tgsmall:     decode.14.log: [ 1494] secs  
+            tgmed:  rescorelm.14.log: [  362] secs  
+      tgmed_carpa:  rescorelm.14.log: [   89] secs  
+          tglarge:  rescorelm.14.log: [  102] secs  
+          fglarge:  rescorelm.14.log: [  115] secs  
+       rnnlm-lstm:  rescorelm.14.log: [    0] secs TEST NOT DONE
+SPLIT 15, frames : 75714 
+          tgsmall:     decode.15.log: [  793] secs  
+            tgmed:  rescorelm.15.log: [  148] secs  
+      tgmed_carpa:  rescorelm.15.log: [   44] secs  
+          tglarge:  rescorelm.15.log: [   49] secs  
+          fglarge:  rescorelm.15.log: [   53] secs  
+       rnnlm-lstm:  rescorelm.15.log: [    0] secs TEST NOT DONE
+SPLIT 16, frames : 122106 
+          tgsmall:     decode.16.log: [ 1034] secs  
+            tgmed:  rescorelm.16.log: [  159] secs  
+      tgmed_carpa:  rescorelm.16.log: [   50] secs  
+          tglarge:  rescorelm.16.log: [   56] secs  
+          fglarge:  rescorelm.16.log: [   61] secs  
+       rnnlm-lstm:  rescorelm.16.log: [    0] secs TEST NOT DONE
+SPLIT 17, frames : 73424 
+          tgsmall:     decode.17.log: [  784] secs  
+            tgmed:  rescorelm.17.log: [  162] secs  
+      tgmed_carpa:  rescorelm.17.log: [   48] secs  
+          tglarge:  rescorelm.17.log: [   52] secs  
+          fglarge:  rescorelm.17.log: [   57] secs  
+       rnnlm-lstm:  rescorelm.17.log: [    0] secs TEST NOT DONE
+SPLIT 18, frames : 78001 
+          tgsmall:     decode.18.log: [  684] secs  
+            tgmed:  rescorelm.18.log: [  108] secs  
+      tgmed_carpa:  rescorelm.18.log: [   35] secs  
+          tglarge:  rescorelm.18.log: [   38] secs  
+          fglarge:  rescorelm.18.log: [   42] secs  
+       rnnlm-lstm:  rescorelm.18.log: [    0] secs TEST NOT DONE
+SPLIT 19, frames : 78940 
+          tgsmall:     decode.19.log: [  650] secs  
+            tgmed:  rescorelm.19.log: [  130] secs  
+      tgmed_carpa:  rescorelm.19.log: [   30] secs  
+          tglarge:  rescorelm.19.log: [   35] secs  
+          fglarge:  rescorelm.19.log: [   38] secs  
+       rnnlm-lstm:  rescorelm.19.log: [    0] secs TEST NOT DONE
+SPLIT 20, frames : 119960 
+          tgsmall:     decode.20.log: [  794] secs  
+            tgmed:  rescorelm.20.log: [  132] secs  
+      tgmed_carpa:  rescorelm.20.log: [   39] secs  
+          tglarge:  rescorelm.20.log: [   42] secs  
+          fglarge:  rescorelm.20.log: [   46] secs  
+       rnnlm-lstm:  rescorelm.20.log: [    0] secs TEST NOT DONE

@@ -1,0 +1,12 @@
+steps/align_fmllr.sh --nj 40 --cmd run.pl data/train_960 data/lang exp/tri5b exp/tri5b_ali_960
+steps/align_fmllr.sh: feature type is lda
+steps/align_fmllr.sh: compiling training graphs
+steps/align_fmllr.sh: aligning data in data/train_960 using exp/tri5b/final.alimdl and speaker-independent features.
+steps/align_fmllr.sh: computing fMLLR transforms
+steps/align_fmllr.sh: doing final alignment.
+steps/align_fmllr.sh: done aligning data.
+steps/diagnostic/analyze_alignments.sh --cmd run.pl data/lang exp/tri5b_ali_960
+steps/diagnostic/analyze_alignments.sh: see stats in exp/tri5b_ali_960/log/analyze_alignments.log
+26 warnings in exp/tri5b_ali_960/log/fmllr.*.log
+530 warnings in exp/tri5b_ali_960/log/align_pass2.*.log
+1305 warnings in exp/tri5b_ali_960/log/align_pass1.*.log

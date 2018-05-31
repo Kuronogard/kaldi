@@ -1,0 +1,56 @@
+%WER 11.79 [ 6413 / 54402, 751 ins, 790 del, 4872 sub ] exp/tri4b/decode_tgsmall_dev_clean/wer_15_0.0
+%WER 10.40 [ 5658 / 54402, 704 ins, 649 del, 4305 sub ] exp/tri4b/decode_tgmed_dev_clean/wer_16_0.0
+%WER 10.39 [ 5654 / 54402, 704 ins, 648 del, 4302 sub ] exp/tri4b/decode_tgmed_carpa_dev_clean/wer_16_0.0
+%WER 8.57 [ 4662 / 54402, 706 ins, 434 del, 3522 sub ] exp/tri4b/decode_tglarge_dev_clean/wer_17_0.0
+%WER 8.18 [ 4452 / 54402, 648 ins, 470 del, 3334 sub ] exp/tri4b/decode_fglarge_dev_clean/wer_15_0.5
+grep: exp/tri4b/decode_rnnlm-lstm_dev_clean/wer*: No such file or directory
+
+%WER 12.52 [ 6583 / 52576, 782 ins, 766 del, 5035 sub ] exp/tri4b/decode_tgsmall_test_clean/wer_16_0.0
+%WER 11.35 [ 5965 / 52576, 756 ins, 637 del, 4572 sub ] exp/tri4b/decode_tgmed_test_clean/wer_17_0.0
+%WER 11.34 [ 5964 / 52576, 756 ins, 637 del, 4571 sub ] exp/tri4b/decode_tgmed_carpa_test_clean/wer_17_0.0
+%WER 9.44 [ 4961 / 52576, 679 ins, 523 del, 3759 sub ] exp/tri4b/decode_tglarge_test_clean/wer_17_0.5
+%WER 9.07 [ 4768 / 52576, 704 ins, 446 del, 3618 sub ] exp/tri4b/decode_fglarge_test_clean/wer_15_0.5
+grep: exp/tri4b/decode_rnnlm-lstm_test_clean/wer*: No such file or directory
+
+%WER 33.64 [ 17139 / 50948, 1714 ins, 2609 del, 12816 sub ] exp/tri4b/decode_tgsmall_dev_other/wer_17_0.0
+%WER 31.92 [ 16261 / 50948, 1789 ins, 2255 del, 12217 sub ] exp/tri4b/decode_tgmed_dev_other/wer_17_0.0
+%WER 31.91 [ 16259 / 50948, 1784 ins, 2253 del, 12222 sub ] exp/tri4b/decode_tgmed_carpa_dev_other/wer_17_0.0
+%WER 29.17 [ 14863 / 50948, 1662 ins, 2039 del, 11162 sub ] exp/tri4b/decode_tglarge_dev_other/wer_17_0.5
+%WER 28.22 [ 14375 / 50948, 1808 ins, 1670 del, 10897 sub ] exp/tri4b/decode_fglarge_dev_other/wer_17_0.0
+grep: exp/tri4b/decode_rnnlm-lstm_dev_other/wer*: No such file or directory
+
+%WER 35.45 [ 18555 / 52343, 1660 ins, 3032 del, 13863 sub ] exp/tri4b/decode_tgsmall_test_other/wer_17_0.0
+%WER 33.61 [ 17588 / 52333, 1762 ins, 2655 del, 13171 sub ] [PARTIAL] exp/tri4b/decode_tgmed_test_other/wer_17_0.0
+%WER 33.62 [ 17599 / 52343, 1758 ins, 2660 del, 13181 sub ] exp/tri4b/decode_tgmed_carpa_test_other/wer_17_0.0
+%WER 30.95 [ 16198 / 52343, 1994 ins, 2030 del, 12174 sub ] exp/tri4b/decode_tglarge_test_other/wer_17_0.0
+%WER 30.14 [ 15775 / 52343, 1864 ins, 1974 del, 11937 sub ] exp/tri4b/decode_fglarge_test_other/wer_17_0.0
+grep: exp/tri4b/decode_rnnlm-lstm_test_other/wer*: No such file or directory
+
+%WER 8.91 [ 4846 / 54402, 595 ins, 579 del, 3672 sub ] exp/nnet5a_clean_100_gpu/decode_tgsmall_dev_clean/wer_12_0.0
+%WER 7.87 [ 4284 / 54402, 570 ins, 458 del, 3256 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_dev_clean/wer_12_0.0
+%WER 7.88 [ 4289 / 54402, 575 ins, 457 del, 3257 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_carpa_dev_clean/wer_12_0.0
+%WER 6.24 [ 3396 / 54402, 471 ins, 384 del, 2541 sub ] exp/nnet5a_clean_100_gpu/decode_tglarge_dev_clean/wer_13_0.5
+%WER 5.91 [ 3216 / 54402, 467 ins, 341 del, 2408 sub ] exp/nnet5a_clean_100_gpu/decode_fglarge_dev_clean/wer_13_0.5
+grep: exp/nnet5a_clean_100_gpu/decode_rnnlm-lstm_dev_clean/wer*: No such file or directory
+
+%WER 9.29 [ 4883 / 52576, 575 ins, 592 del, 3716 sub ] exp/nnet5a_clean_100_gpu/decode_tgsmall_test_clean/wer_14_0.0
+%WER 8.32 [ 4373 / 52576, 555 ins, 494 del, 3324 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_test_clean/wer_14_0.0
+%WER 8.33 [ 4379 / 52576, 558 ins, 492 del, 3329 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_carpa_test_clean/wer_14_0.0
+%WER 6.75 [ 3548 / 52576, 513 ins, 374 del, 2661 sub ] exp/nnet5a_clean_100_gpu/decode_tglarge_test_clean/wer_13_0.5
+%WER 6.45 [ 3389 / 52576, 503 ins, 316 del, 2570 sub ] exp/nnet5a_clean_100_gpu/decode_fglarge_test_clean/wer_13_0.5
+%WER 6.24 [ 3280 / 52576, 418 ins, 383 del, 2479 sub ] exp/nnet5a_clean_100_gpu/decode_rnnlm-lstm_test_clean/wer_16_0.0
+
+%WER 25.70 [ 13095 / 50948, 1210 ins, 2097 del, 9788 sub ] exp/nnet5a_clean_100_gpu/decode_tgsmall_dev_other/wer_17_0.0
+%WER 23.94 [ 12197 / 50948, 1345 ins, 1676 del, 9176 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_dev_other/wer_16_0.0
+%WER 23.93 [ 12192 / 50948, 1294 ins, 1782 del, 9116 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_carpa_dev_other/wer_17_0.0
+%WER 21.10 [ 10750 / 50948, 1461 ins, 1242 del, 8047 sub ] exp/nnet5a_clean_100_gpu/decode_tglarge_dev_other/wer_17_0.0
+%WER 19.97 [ 10173 / 50948, 1159 ins, 1345 del, 7669 sub ] exp/nnet5a_clean_100_gpu/decode_fglarge_dev_other/wer_16_0.5
+grep: exp/nnet5a_clean_100_gpu/decode_rnnlm-lstm_dev_other/wer*: No such file or directory
+
+%WER 27.26 [ 14271 / 52343, 1314 ins, 2325 del, 10632 sub ] exp/nnet5a_clean_100_gpu/decode_tgsmall_test_other/wer_16_0.0
+%WER 25.48 [ 13336 / 52343, 1313 ins, 2073 del, 9950 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_test_other/wer_17_0.0
+%WER 25.47 [ 13330 / 52343, 1310 ins, 2085 del, 9935 sub ] exp/nnet5a_clean_100_gpu/decode_tgmed_carpa_test_other/wer_17_0.0
+%WER 22.55 [ 11802 / 52343, 1560 ins, 1440 del, 8802 sub ] exp/nnet5a_clean_100_gpu/decode_tglarge_test_other/wer_16_0.0
+%WER 21.60 [ 11307 / 52343, 1451 ins, 1326 del, 8530 sub ] exp/nnet5a_clean_100_gpu/decode_fglarge_test_other/wer_16_0.0
+grep: exp/nnet5a_clean_100_gpu/decode_rnnlm-lstm_test_other/wer*: No such file or directory
+
