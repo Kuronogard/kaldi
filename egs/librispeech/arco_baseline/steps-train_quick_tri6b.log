@@ -12,3 +12,22 @@ steps/train_quick.sh: pass 1
 steps/train_quick.sh: pass 2
 steps/train_quick.sh: pass 3
 steps/train_quick.sh: pass 4
+steps/train_quick.sh: pass 5
+steps/train_quick.sh: pass 6
+steps/train_quick.sh: pass 7
+steps/train_quick.sh: pass 8
+steps/train_quick.sh: pass 9
+steps/train_quick.sh: pass 10
+steps/train_quick.sh: aligning data
+steps/train_quick.sh: pass 11
+steps/train_quick.sh: pass 12
+steps/train_quick.sh: pass 13
+steps/train_quick.sh: pass 14
+steps/train_quick.sh: pass 15
+steps/train_quick.sh: aligning data
+steps/train_quick.sh: pass 16
+steps/train_quick.sh: pass 17
+steps/train_quick.sh: pass 18
+steps/train_quick.sh: pass 19
+steps/train_quick.sh: estimating alignment model
+Done

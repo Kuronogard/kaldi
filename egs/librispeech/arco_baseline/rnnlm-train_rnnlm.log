@@ -841,3 +841,24 @@ Training neural net (pass 838)
 Training neural net (pass 839)
 Training neural net (pass 840)
 Training neural net (pass 841)
+Training neural net (pass 842)
+Training neural net (pass 843)
+Training neural net (pass 844)
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.0.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.1.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.2.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.3.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.4.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.5.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.6.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.7.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.8.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.9.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.10.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.11.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.12.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.13.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.14.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.15.log
+rnnlm/get_best_model.py: warning: could not parse objective function from exp/rnnlm_lstm/log/compute_prob.16.log
+rnnlm/get_best_model.py: could not open log-file exp/rnnlm_lstm/log/compute_prob.18.log

@@ -1,261 +1,52 @@
-steps/nnet2/train_pnorm_fast.sh --stage -10 --samples-per-iter 400000 --num-epochs 7 --num-epochs-extra 3 --parallel-opts --gpu 1 --num-threads 1 --minibatch-size 512 --num-jobs-nnet 6 --mix-up 10000 --initial-learning-rate 0.01 --final-learning-rate 0.001 --num-hidden-layers 4 --pnorm-input-dim 4000 --pnorm-output-dim 400 --cmd run.pl data/train_clean_460 data/lang exp/tri5b exp/nnet6a_clean_460_gpu
-steps/nnet2/train_pnorm_fast.sh: calling get_lda.sh
-steps/nnet2/get_lda.sh --transform-dir exp/tri5b --splice-width 4 --cmd run.pl data/train_clean_460 data/lang exp/tri5b exp/nnet6a_clean_460_gpu
-steps/nnet2/get_lda.sh: feature type is lda
-steps/nnet2/get_lda.sh: using transforms from exp/tri5b
-steps/nnet2/get_lda.sh: Accumulating LDA statistics.
-steps/nnet2/get_lda.sh: Finished estimating LDA
-steps/nnet2/train_pnorm_fast.sh: calling get_egs.sh
-steps/nnet2/get_egs.sh --transform-dir exp/tri5b --splice-width 4 --samples-per-iter 400000 --num-jobs-nnet 6 --stage 0 --cmd run.pl --io-opts --max-jobs-run 15 data/train_clean_460 data/lang exp/tri5b exp/nnet6a_clean_460_gpu
-steps/nnet2/get_egs.sh: feature type is lda
-steps/nnet2/get_egs.sh: using transforms from exp/tri5b
-steps/nnet2/get_egs.sh: working out number of frames of training data
-steps/nnet2/get_egs.sh: Every epoch, splitting the data up into 70 iterations,
-steps/nnet2/get_egs.sh: giving samples-per-iteration of 397882 (you requested 400000).
-Getting validation and training subset examples.
-steps/nnet2/get_egs.sh: extracting validation and training-subset alignments.
-Getting subsets of validation examples for diagnostics and combination.
-Creating training examples
-Generating training examples on disk
-steps/nnet2/get_egs.sh: rearranging examples into parts for different parallel jobs
-Shuffling the order of training examples
-(in order to avoid stressing the disk, these won't all run at once).
-steps/nnet2/get_egs.sh: Finished preparing training examples
-steps/nnet2/train_pnorm_fast.sh: initializing neural net
-Training transition probabilities and setting priors
-prepare vector assignment for FixedScaleComponent before softmax
-(use priors^-0.25 and rescale to average 1)
-insert an additional layer of FixedScaleComponent before softmax
-steps/nnet2/train_pnorm_fast.sh: Will train for 7 + 3 epochs, equalling 
-steps/nnet2/train_pnorm_fast.sh: 490 + 210 = 700 iterations, 
-steps/nnet2/train_pnorm_fast.sh: (while reducing learning rate) + (with constant learning rate).
-steps/nnet2/train_pnorm_fast.sh: Will not do mix up
-Training neural net (pass 0)
-Training neural net (pass 1)
-Training neural net (pass 2)
-Training neural net (pass 3)
-Training neural net (pass 4)
-Training neural net (pass 5)
-Training neural net (pass 6)
-Training neural net (pass 7)
-Training neural net (pass 8)
-Training neural net (pass 9)
-Training neural net (pass 10)
-Training neural net (pass 11)
-Training neural net (pass 12)
-Training neural net (pass 13)
-Training neural net (pass 14)
-Training neural net (pass 15)
-Training neural net (pass 16)
-Training neural net (pass 17)
-Training neural net (pass 18)
-Training neural net (pass 19)
-Training neural net (pass 20)
-Training neural net (pass 21)
-Training neural net (pass 22)
-Training neural net (pass 23)
-Training neural net (pass 24)
-Training neural net (pass 25)
-Training neural net (pass 26)
-Training neural net (pass 27)
-Training neural net (pass 28)
-Training neural net (pass 29)
-Training neural net (pass 30)
-Training neural net (pass 31)
-Training neural net (pass 32)
-Training neural net (pass 33)
-Training neural net (pass 34)
-Training neural net (pass 35)
-Training neural net (pass 36)
-Training neural net (pass 37)
-Training neural net (pass 38)
-Training neural net (pass 39)
-Training neural net (pass 40)
-Training neural net (pass 41)
-Training neural net (pass 42)
-Training neural net (pass 43)
-Training neural net (pass 44)
-Training neural net (pass 45)
-Training neural net (pass 46)
-Training neural net (pass 47)
-Training neural net (pass 48)
-Training neural net (pass 49)
-Training neural net (pass 50)
-Training neural net (pass 51)
-Training neural net (pass 52)
-Training neural net (pass 53)
-Training neural net (pass 54)
-Training neural net (pass 55)
-Training neural net (pass 56)
-Training neural net (pass 57)
-Training neural net (pass 58)
-Training neural net (pass 59)
-Training neural net (pass 60)
-Training neural net (pass 61)
-Training neural net (pass 62)
-Training neural net (pass 63)
-Training neural net (pass 64)
-Training neural net (pass 65)
-Training neural net (pass 66)
-Training neural net (pass 67)
-Training neural net (pass 68)
-Training neural net (pass 69)
-Training neural net (pass 70)
-Training neural net (pass 71)
-Training neural net (pass 72)
-Training neural net (pass 73)
-Training neural net (pass 74)
-Training neural net (pass 75)
-Training neural net (pass 76)
-Training neural net (pass 77)
-Training neural net (pass 78)
-Training neural net (pass 79)
-Training neural net (pass 80)
-Training neural net (pass 81)
-Training neural net (pass 82)
-Training neural net (pass 83)
-Training neural net (pass 84)
-Training neural net (pass 85)
-Training neural net (pass 86)
-Training neural net (pass 87)
-Training neural net (pass 88)
-Training neural net (pass 89)
-Training neural net (pass 90)
-Training neural net (pass 91)
-Training neural net (pass 92)
-Training neural net (pass 93)
-Training neural net (pass 94)
-Training neural net (pass 95)
-Training neural net (pass 96)
-Training neural net (pass 97)
-Training neural net (pass 98)
-Training neural net (pass 99)
-Training neural net (pass 100)
-Training neural net (pass 101)
-Training neural net (pass 102)
-Training neural net (pass 103)
-Training neural net (pass 104)
-Training neural net (pass 105)
-Training neural net (pass 106)
-Training neural net (pass 107)
-Training neural net (pass 108)
-Training neural net (pass 109)
-Training neural net (pass 110)
-Training neural net (pass 111)
-Training neural net (pass 112)
-Training neural net (pass 113)
-Training neural net (pass 114)
-Training neural net (pass 115)
-Training neural net (pass 116)
-Training neural net (pass 117)
-Training neural net (pass 118)
-Training neural net (pass 119)
-Training neural net (pass 120)
-Training neural net (pass 121)
-Training neural net (pass 122)
-Training neural net (pass 123)
-Training neural net (pass 124)
-Training neural net (pass 125)
-Training neural net (pass 126)
-Training neural net (pass 127)
-Training neural net (pass 128)
-Training neural net (pass 129)
-Training neural net (pass 130)
-Training neural net (pass 131)
-Training neural net (pass 132)
-Training neural net (pass 133)
-Training neural net (pass 134)
-Training neural net (pass 135)
-Training neural net (pass 136)
-Training neural net (pass 137)
-Training neural net (pass 138)
-Training neural net (pass 139)
-Training neural net (pass 140)
-Training neural net (pass 141)
-Training neural net (pass 142)
-Training neural net (pass 143)
-Training neural net (pass 144)
-Training neural net (pass 145)
-Training neural net (pass 146)
-Training neural net (pass 147)
-Training neural net (pass 148)
-Training neural net (pass 149)
-Training neural net (pass 150)
-Training neural net (pass 151)
-Training neural net (pass 152)
-Training neural net (pass 153)
-Training neural net (pass 154)
-Training neural net (pass 155)
-Training neural net (pass 156)
-Training neural net (pass 157)
-Training neural net (pass 158)
-Training neural net (pass 159)
-Training neural net (pass 160)
-Training neural net (pass 161)
-Training neural net (pass 162)
-Training neural net (pass 163)
-Training neural net (pass 164)
-Training neural net (pass 165)
-Training neural net (pass 166)
-Training neural net (pass 167)
-Training neural net (pass 168)
-Training neural net (pass 169)
-Training neural net (pass 170)
-Training neural net (pass 171)
-Training neural net (pass 172)
-Training neural net (pass 173)
-Training neural net (pass 174)
-Training neural net (pass 175)
-Training neural net (pass 176)
-Training neural net (pass 177)
-Training neural net (pass 178)
-Training neural net (pass 179)
-Training neural net (pass 180)
-Training neural net (pass 181)
-Training neural net (pass 182)
-Training neural net (pass 183)
-Training neural net (pass 184)
-Training neural net (pass 185)
-Training neural net (pass 186)
-Training neural net (pass 187)
-Training neural net (pass 188)
-Training neural net (pass 189)
-Training neural net (pass 190)
-Training neural net (pass 191)
-Training neural net (pass 192)
-Training neural net (pass 193)
-Training neural net (pass 194)
-Training neural net (pass 195)
-Training neural net (pass 196)
-Training neural net (pass 197)
-Training neural net (pass 198)
-Training neural net (pass 199)
-Training neural net (pass 200)
-Training neural net (pass 201)
-Training neural net (pass 202)
-Training neural net (pass 203)
-Training neural net (pass 204)
-Training neural net (pass 205)
-Training neural net (pass 206)
-Training neural net (pass 207)
-Training neural net (pass 208)
-Training neural net (pass 209)
-Training neural net (pass 210)
-Training neural net (pass 211)
-Training neural net (pass 212)
-Training neural net (pass 213)
-Training neural net (pass 214)
-Training neural net (pass 215)
-Training neural net (pass 216)
-Training neural net (pass 217)
-Training neural net (pass 218)
-Training neural net (pass 219)
-Training neural net (pass 220)
-Training neural net (pass 221)
-Training neural net (pass 222)
-Training neural net (pass 223)
-Training neural net (pass 224)
-Training neural net (pass 225)
-Training neural net (pass 226)
-Training neural net (pass 227)
-Training neural net (pass 228)
+steps/nnet2/decode.sh --nj 20 --cmd run.pl --transform-dir exp/tri5b/decode_tgsmall_test_clean exp/tri5b/graph_tgsmall data/test_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean
+steps/nnet2/decode.sh: feature type is lda
+steps/nnet2/decode.sh: using transforms from exp/tri5b/decode_tgsmall_test_clean
+steps/diagnostic/analyze_lats.sh --cmd run.pl --iter final exp/tri5b/graph_tgsmall exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,3,14) and mean=6.9
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean/log/analyze_lattice_depth_stats.log
+score best paths
+score confidence and timing with sclite
+Decoding done.
+steps/lmrescore.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tgmed data/test_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean exp/nnet6a_clean_460_gpu/decode_tgmed_test_clean
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tglarge data/test_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean exp/nnet6a_clean_460_gpu/decode_tglarge_test_clean
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_fglarge data/test_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_test_clean exp/nnet6a_clean_460_gpu/decode_fglarge_test_clean
+steps/nnet2/decode.sh --nj 20 --cmd run.pl --transform-dir exp/tri5b/decode_tgsmall_test_other exp/tri5b/graph_tgsmall data/test_other exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other
+steps/nnet2/decode.sh: feature type is lda
+steps/nnet2/decode.sh: using transforms from exp/tri5b/decode_tgsmall_test_other
+steps/diagnostic/analyze_lats.sh --cmd run.pl --iter final exp/tri5b/graph_tgsmall exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(2,9,68) and mean=27.0
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other/log/analyze_lattice_depth_stats.log
+score best paths
+score confidence and timing with sclite
+Decoding done.
+steps/lmrescore.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tgmed data/test_other exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other exp/nnet6a_clean_460_gpu/decode_tgmed_test_other
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tglarge data/test_other exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other exp/nnet6a_clean_460_gpu/decode_tglarge_test_other
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_fglarge data/test_other exp/nnet6a_clean_460_gpu/decode_tgsmall_test_other exp/nnet6a_clean_460_gpu/decode_fglarge_test_other
+steps/nnet2/decode.sh --nj 20 --cmd run.pl --transform-dir exp/tri5b/decode_tgsmall_dev_clean exp/tri5b/graph_tgsmall data/dev_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean
+steps/nnet2/decode.sh: feature type is lda
+steps/nnet2/decode.sh: using transforms from exp/tri5b/decode_tgsmall_dev_clean
+steps/diagnostic/analyze_lats.sh --cmd run.pl --iter final exp/tri5b/graph_tgsmall exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,3,14) and mean=6.6
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean/log/analyze_lattice_depth_stats.log
+score best paths
+score confidence and timing with sclite
+Decoding done.
+steps/lmrescore.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tgmed data/dev_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean exp/nnet6a_clean_460_gpu/decode_tgmed_dev_clean
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tglarge data/dev_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean exp/nnet6a_clean_460_gpu/decode_tglarge_dev_clean
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_fglarge data/dev_clean exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_clean exp/nnet6a_clean_460_gpu/decode_fglarge_dev_clean
+steps/nnet2/decode.sh --nj 20 --cmd run.pl --transform-dir exp/tri5b/decode_tgsmall_dev_other exp/tri5b/graph_tgsmall data/dev_other exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other
+steps/nnet2/decode.sh: feature type is lda
+steps/nnet2/decode.sh: using transforms from exp/tri5b/decode_tgsmall_dev_other
+steps/diagnostic/analyze_lats.sh --cmd run.pl --iter final exp/tri5b/graph_tgsmall exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other/log/analyze_alignments.log
+Overall, lattice depth (10,50,90-percentile)=(1,8,64) and mean=25.2
+steps/diagnostic/analyze_lats.sh: see stats in exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other/log/analyze_lattice_depth_stats.log
+score best paths
+score confidence and timing with sclite
+Decoding done.
+steps/lmrescore.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tgmed data/dev_other exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other exp/nnet6a_clean_460_gpu/decode_tgmed_dev_other
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_tglarge data/dev_other exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other exp/nnet6a_clean_460_gpu/decode_tglarge_dev_other
+steps/lmrescore_const_arpa.sh --cmd run.pl data/lang_test_tgsmall data/lang_test_fglarge data/dev_other exp/nnet6a_clean_460_gpu/decode_tgsmall_dev_other exp/nnet6a_clean_460_gpu/decode_fglarge_dev_other
