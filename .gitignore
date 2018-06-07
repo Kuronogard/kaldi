@@ -31,6 +31,7 @@ core
 
 # Test log files
 *.testlog
+*.log
 
 # emacs saves
 [#]*[#]
