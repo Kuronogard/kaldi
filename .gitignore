@@ -17,6 +17,7 @@
 # profiling files and core files
 *.nvprof
 core
+*.vimrc
 
 # Compiled Dynamic libraries
 *.so
