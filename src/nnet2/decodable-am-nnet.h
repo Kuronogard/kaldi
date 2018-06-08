@@ -178,7 +178,83 @@ class DecodableAmNnetParallel: public DecodableInterface {
 };
 
 
+class DecodableAmNnetWithIO: public DecodableInterface {
+ public:
+  DecodableAmNnetWithIO(const TransitionModel &trans_model):
+      trans_model_(trans_model) {};
 
+  // Note, frames are numbered from zero.  But transition_id is numbered
+  // from one (this routine is called by FSTs).
+  virtual BaseFloat LogLikelihood(int32 frame, int32 transition_id) {
+    return log_probs_(frame,
+                      trans_model_.TransitionIdToPdf(transition_id));
+  }
+
+  virtual int32 NumFramesReady() const { return log_probs_.NumRows(); }
+  
+  // Indices are one-based!  This is for compatibility with OpenFst.
+  virtual int32 NumIndices() const { return trans_model_.NumTransitionIds(); }
+  
+  virtual bool IsLastFrame(int32 frame) const {
+    KALDI_ASSERT(frame < NumFramesReady());
+    return (frame == NumFramesReady() - 1);
+  }
+
+  void ComputeFromModel(const AmNnet &am_nnet,
+                  const CuMatrixBase<BaseFloat> &feats,
+                  bool pad_input = true, // if !pad_input, the NumIndices()
+                                         // will be < feats.NumRows().
+                  BaseFloat prob_scale = 1.0) {
+
+    int32 num_rows = feats.NumRows() -
+        (pad_input ? 0 : am_nnet.GetNnet().LeftContext() +
+                         am_nnet.GetNnet().RightContext());
+    if (num_rows <= 0) {
+      KALDI_WARN << "Input with " << feats.NumRows()  << " rows will produce "
+                 << "empty output.";
+      return;
+    }
+    CuMatrix<BaseFloat> log_probs(num_rows, trans_model_.NumPdfs());
+    // the following function is declared in nnet-compute.h
+    NnetComputation(am_nnet.GetNnet(), feats, pad_input, &log_probs);
+    log_probs.ApplyFloor(1.0e-20); // Avoid log of zero which leads to NaN.
+    log_probs.ApplyLog();
+    CuVector<BaseFloat> priors(am_nnet.Priors());
+    KALDI_ASSERT(priors.Dim() == trans_model_.NumPdfs() &&
+                 "Priors in neural network not set up.");
+    priors.ApplyLog();
+    // subtract log-prior (divide by prior)
+    log_probs.AddVecToRows(-1.0, priors);
+    // apply probability scale.
+    log_probs.Scale(prob_scale);
+    // Transfer the log-probs to the CPU for faster access by the
+    // decoding process.
+    log_probs_.Swap(&log_probs);
+  }
+
+
+
+  void ReadProbsFromFile(std::istream &is, bool binary) {
+	log_probs_.Read(is, binary, false);
+    KALDI_ASSERT(log_probs_.NumCols() == trans_model_.NumPdfs() && 
+                 "Dimension of Probs from file differ from transition model.");
+  }
+
+
+  void WriteProbsToFile(std::ostream &os, bool binary) {
+    KALDI_ASSERT(log_probs_.NumRows() > 0 && 
+                 "Probabilities not computed. Nothing to write" );
+	log_probs_.Write(os, binary);
+  }
+
+
+ protected:
+  const TransitionModel &trans_model_;
+  Matrix<BaseFloat> log_probs_; // actually not really probabilities, since we divide
+  // by the prior -> they won't sum to one.
+
+  KALDI_DISALLOW_COPY_AND_ASSIGN(DecodableAmNnetWithIO);
+};
 
   
 } // namespace nnet2
