@@ -235,18 +235,28 @@ class DecodableAmNnetWithIO: public DecodableInterface {
 
 
   void ReadProbsFromFile(std::istream &is, bool binary) {
-	log_probs_.Read(is, binary, false);
+		log_probs_.Read(is, binary, false);
     KALDI_ASSERT(log_probs_.NumCols() == trans_model_.NumPdfs() && 
                  "Dimension of Probs from file differ from transition model.");
   }
+
+	void ReadProbsFromMatrix(Matrix<BaseFloat> probs) {
+		log_probs_ = Matrix<BaseFloat>(probs); 
+		//log_probs_ = Matrix<BaseFloat>(probs.NumRows(), probs.NumCols());
+		std::cout << "rows: " << log_probs_.NumRows() << " cols: " << log_probs_.NumCols() << std::endl;
+		//log_probs_.CopyFromMat(probs);
+	}
 
 
   void WriteProbsToFile(std::ostream &os, bool binary) {
     KALDI_ASSERT(log_probs_.NumRows() > 0 && 
                  "Probabilities not computed. Nothing to write" );
-	log_probs_.Write(os, binary);
+		log_probs_.Write(os, binary);
   }
 
+	Matrix<BaseFloat>& GetLogProbs() {
+		return log_probs_;
+	}
 
  protected:
   const TransitionModel &trans_model_;
