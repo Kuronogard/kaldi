@@ -25,7 +25,7 @@
 #       		- final.mdl
 #       		- HCLG.fst
 
-# The utterancesdirectories  must include
+# The utterances directories  must include
 # - utt_dir/
 #	- utt2spk
 #	- spk2utt
