@@ -362,5 +362,30 @@ BaseFloat DecodableAmNnetSimpleParallel::LogLikelihood(int32 frame,
 }
 
 
+void DecodableAmNnetSimpleWithIO::ComputeFromModel(
+		const NnetSimpleComputationOptions &opts,
+    const AmNnetSimple &am_nnet,
+    const MatrixBase<BaseFloat> &feats,
+    const MatrixBase<BaseFloat> *online_ivectors,
+    int32 online_ivector_period,
+    CachingOptimizingCompiler *compiler) {
+	
+	DecodableNnetSimple decodable_nnet(opts, am_nnet.GetNnet(), am_nnet.Priors(),
+																		feats, compiler, NULL, online_ivectors, online_ivector_period);
+
+	log_probs_.Resize(feats.NumRows(), trans_model_.NumTransitionIds());
+
+	// Go though all the frames computing the network and saving the posteriors in log_probs_
+	for(int32 frame = 0; frame < feats.NumRows(); frame++) {
+		Vector<BaseFloat> probs(1);
+		decodable_nnet.GetOutputForFrame(frame, &probs);
+
+		// Add new row (probs) to log_probs_
+		log_probs_.CopyRowFromVec(probs, static_cast<MatrixIndexT>(frame));
+	}
+
+}
+
+
 } // namespace nnet3
 } // namespace kaldi

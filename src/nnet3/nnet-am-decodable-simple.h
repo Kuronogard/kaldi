@@ -393,6 +393,66 @@ class DecodableAmNnetSimpleParallel: public DecodableInterface {
 
 
 
+class DecodableAmNnetSimpleWithIO: public DecodableInterface {
+ public:
+	DecodableAmNnetSimpleWithIO(const TransitionModel &trans_model):
+		trans_model_(trans_model) {};
+
+	virtual BaseFloat LogLikelihood(int32 frame, int32 transition_id) {
+		return log_probs_(frame, trans_model_.TransitionIdToPdf(transition_id));
+	}
+
+	virtual int32 NumFramesReady() const {
+		return log_probs_.NumRows();
+	}
+
+	virtual int32 NumIndices() const {
+		return trans_model_.NumTransitionIds();
+	}
+
+	virtual bool IsLastFrame(int32 frame) const {
+		KALDI_ASSERT(frame < NumFramesReady());
+		return (frame == NumFramesReady() - 1);
+	}
+
+	void ComputeFromModel(const NnetSimpleComputationOptions &opts,
+												const AmNnetSimple &am_nnet,
+												const MatrixBase<BaseFloat> &feats,
+												const MatrixBase<BaseFloat> *online_ivectors,
+												int32 online_ivector_period,
+												CachingOptimizingCompiler *compiler);
+
+	void ReadProbsFromFile(std::istream &is, bool binary) {
+		log_probs_.Read(is, binary, false);
+		KALDI_ASSERT(log_probs_.NumCols() == trans_model_.NumPdfs() &&
+							"Dimension of Probs from file differ from transition model.");
+	}
+
+	void ReadProbsFromMatrix(Matrix<BaseFloat> probs) {
+		log_probs_ = Matrix<BaseFloat>(probs);
+		std::cout << "rows: " << log_probs_.NumRows() << " cols: " << log_probs_.NumCols() << std::endl;
+	}
+
+	void WriteProbsToFile(std::ostream &os, bool binary) {
+		KALDI_ASSERT(log_probs_.NumRows() > 0 &&
+							"Probabilities not computed. Nothing to write.");
+		log_probs_.Write(os, binary);
+	}
+
+	Matrix<BaseFloat>& GetLogProbs() {
+		return log_probs_;
+	}
+
+ private:
+  KALDI_DISALLOW_COPY_AND_ASSIGN(DecodableAmNnetSimpleWithIO);
+  // This compiler object is only used if the 'compiler'
+  // argument to the constructor is NULL.
+	Matrix<BaseFloat> log_probs_;
+  const TransitionModel &trans_model_;
+
+};
+
+
 } // namespace nnet3
 } // namespace kaldi
 
