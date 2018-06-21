@@ -8,7 +8,7 @@ include ../kaldi.mk
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
-BINFILES = baseline_A extract_probs
+BINFILES = baseline_A extract_probs extract_probs_B baseline_B
 
 
 OBJFILES =
