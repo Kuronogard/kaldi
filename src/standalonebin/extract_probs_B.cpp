@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 		
 		NnetSimpleComputationOptions decodable_opts;
 
-		int32 online_ivector_period = 0;
+		int32 online_ivector_period = 10;
 		decodable_opts.Register(&po);
 
 		Timer timer;
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 		//BaseFloat acoustic_scale = 0.1;
 
 		po.Read(argc, argv);
-		if (po.NumArgs() < 3 || po.NumArgs() > 3) {
+		if (po.NumArgs() < 4 || po.NumArgs() > 4) {
 			po.PrintUsage();
 			exit(1);
 		}
