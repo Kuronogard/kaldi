@@ -399,6 +399,8 @@ class DecodableAmNnetSimpleWithIO: public DecodableInterface {
 		trans_model_(trans_model) {};
 
 	virtual BaseFloat LogLikelihood(int32 frame, int32 transition_id) {
+		//std::cout << "LogLikelihood(" << frame << "," << trans_model_.TransitionIdToPdf(transition_id) << ")";
+		//std::cout << " = " << log_probs_(frame, trans_model_.TransitionIdToPdf(transition_id)) << std::endl;
 		return log_probs_(frame, trans_model_.TransitionIdToPdf(transition_id));
 	}
 
@@ -431,6 +433,7 @@ class DecodableAmNnetSimpleWithIO: public DecodableInterface {
 	void ReadProbsFromMatrix(Matrix<BaseFloat> probs) {
 		log_probs_ = Matrix<BaseFloat>(probs);
 		std::cout << "rows: " << log_probs_.NumRows() << " cols: " << log_probs_.NumCols() << std::endl;
+		std::cout << "fin" << std::endl;
 	}
 
 	void WriteProbsToFile(std::ostream &os, bool binary) {

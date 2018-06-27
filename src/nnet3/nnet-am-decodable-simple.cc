@@ -174,6 +174,7 @@ void DecodableNnetSimple::GetOutputForFrame(int32 subsampled_frame,
       subsampled_frame >= current_log_post_subsampled_offset_ +
       current_log_post_.NumRows())
     EnsureFrameIsComputed(subsampled_frame);
+//	std::cout << "Log_post_ size: " << current_log_post_.NumRows() << ", " << current_log_post_.NumCols() << std::endl;
   output->CopyFromVec(current_log_post_.Row(
       subsampled_frame - current_log_post_subsampled_offset_));
 }
@@ -373,13 +374,17 @@ void DecodableAmNnetSimpleWithIO::ComputeFromModel(
 	DecodableNnetSimple decodable_nnet(opts, am_nnet.GetNnet(), am_nnet.Priors(),
 																		feats, compiler, NULL, online_ivectors, online_ivector_period);
 
-	log_probs_.Resize(feats.NumRows(), trans_model_.NumTransitionIds());
+	log_probs_.Resize(feats.NumRows(), trans_model_.NumPdfs());
+
+	//std::cout << "Num pdf ids: " << trans_model_.NumPdfs() << std::endl;
+	//std::cout << "log_probs_ size: " << log_probs_.NumRows() << ", " << log_probs_.NumCols() << std::endl;
 
 	// Go though all the frames computing the network and saving the posteriors in log_probs_
 	for(int32 frame = 0; frame < feats.NumRows(); frame++) {
-		Vector<BaseFloat> probs(1);
+		Vector<BaseFloat> probs(trans_model_.NumPdfs());
+		//std::cout << "Probs dim: " << probs.Dim() << std::endl;
 		decodable_nnet.GetOutputForFrame(frame, &probs);
-
+		//std::cout << " " << frame;
 		// Add new row (probs) to log_probs_
 		log_probs_.CopyRowFromVec(probs, static_cast<MatrixIndexT>(frame));
 	}
