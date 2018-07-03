@@ -136,8 +136,11 @@ echo "--max-count=0" >> ${ivector_conf_file}
 
 # Compute 40-dim mfcc features
 # make_mfcc.sh --nj 70 --mfcc-config conf/mfcc_hires.conf --cmd "${train_cmd}" data/<test-set>_hires
-compute-mfcc-feats --verbose=2 --config=${mfcc_conf_file} scp,p:${wav_scp_file} ark:- | \
-copy-feats --compress=true ark:- ark,scp:${mfcc_ark_file},${mfcc_scp_file}
+echo "Compute Mfcc features"
+time (compute-mfcc-feats --verbose=2 --config=${mfcc_conf_file} scp,p:${wav_scp_file} ark:temp.ark)
+copy-feats --compress=true ark:temp.ark ark,scp:${mfcc_ark_file},${mfcc_scp_file}
+
+rm temp.ark
 
 
 # Compute cmvn stats
@@ -158,10 +161,11 @@ compute-cmvn-stats --spk2utt=ark:${utt2spk_file} scp:${mfcc_scp_file} ark,scp:${
 #steps/online/nnet2/extract_ivectors_online.sh --cmd "$train_cmd" --nj 20 \
 #		data/<testset>_hires exp/nnet3_cleaned/extractor \
 #		exp/nnet3_cleaned/ivectors_<testset>_hires
-ivector-extract-online2 --config=${ivector_conf_file} ark:${spk2utt_file} scp:${mfcc_scp_file} ark:- | \
-copy-feats --compress=true ark:- ark,scp:${ivector_ark_file},${ivector_scp_file}
+echo "Compute iVectors"
+time (ivector-extract-online2 --config=${ivector_conf_file} ark:${spk2utt_file} scp:${mfcc_scp_file} ark:temp.ark)
+copy-feats --compress=true ark:temp.ark ark,scp:${ivector_ark_file},${ivector_scp_file}
 
-
+rm temp.ark
 
 ##############################################
 ## COMPUTE FINAL FEATURE VECTORS
