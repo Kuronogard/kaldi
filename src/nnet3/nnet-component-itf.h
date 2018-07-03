@@ -23,6 +23,7 @@
 #define KALDI_NNET3_NNET_COMPONENT_ITF_H_
 
 #include <iostream>
+#include <string>
 #include "nnet3/nnet-common.h"
 #include "nnet3/nnet-parse.h"
 #include "base/kaldi-error.h"
@@ -110,6 +111,19 @@ class ComponentPrecomputedIndexes {
 
 class IndexSet;  // Forward declaration; declared in nnet-computation-graph.h.
 
+
+
+class ComponentStatistics {
+ public:
+	bool valid;
+	int32 numInputs;
+	int32 numOutputs;
+	int32 numWeights;
+	int32 sizeBytes;
+	std::string info;
+};
+
+
 /// Abstract base-class for neural-net components.
 class Component {
  public:
@@ -194,6 +208,11 @@ class Component {
   ///        also.
   virtual void ZeroStats() { }
 
+
+
+	/// \brief Return a class ComponentStatistics with information of the
+	//					component, such as number of weights and size.
+	virtual void GetStatistics(ComponentStatistics& statistics) {statistics.valid = false;};
 
 
   /// \brief  This function only does something interesting for non-simple Components.
