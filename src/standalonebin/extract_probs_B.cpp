@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 		//BaseFloat acoustic_scale = 0.1;
 
 		po.Read(argc, argv);
-		if (po.NumArgs() < 4 || po.NumArgs() > 4) {
+		if (po.NumArgs() < 5 || po.NumArgs() > 5) {
 			po.PrintUsage();
 			exit(1);
 		}
@@ -47,8 +47,9 @@ int main(int argc, char **argv) {
 		std::string features_rspecifier = po.GetArg(2);
 		std::string ac_model_filename = po.GetArg(3);
 		std::string posterior_wspecifier = po.GetArg(4);
-	
-		std::ofstream elapsed_time_o("nnet_time.csv");
+		std::string time_log_filename = po.GetArg(5);	
+
+		std::ofstream elapsed_time_o(time_log_filename);
 
 		TransitionModel trans_model;
 		AmNnetSimple am_nnet;
@@ -71,7 +72,10 @@ int main(int argc, char **argv) {
 		CachingOptimizingCompiler compiler(am_nnet.GetNnet(), decodable_opts.optimize_config);
 
 
+		elapsed_time_o << "utterance, frames, fps, execution time" << std::endl;
+
 		kaldi::int64 frame_count = 0;
+		kaldi::int64 utt_count = 0;		
 
 		for(; !features_reader.Done(); features_reader.Next()) {
 			std::string utt = features_reader.Key();
@@ -89,13 +93,15 @@ int main(int argc, char **argv) {
 			double elapsed = timer.Elapsed();
 
 			// Store utterance name, elapsed time and real time factor
-			elapsed_time_o << utt << ", " << elapsed << ", " << features.NumRows() << ", " << (elapsed*100.0/features.NumRows()) << std::endl;
+			elapsed_time_o << utt << ", " << features.NumRows() << ", 100, " << elapsed << std::endl;
 
 			posterior_writer.Write(utt, nnet_decodable.GetLogProbs());
 			//nnet_decodable.WriteProbsToTable(posterior_writer, utt);
 			frame_count += features.NumRows();
+			utt_count++;
 		}
-		std::cout << "Terminado" << std::endl;
+		std::cout << "Finished computing posterior probabilities." << std::endl;
+		std::cout << "Total frames is " << frame_count << " for " << utt_count << " utterances." << std::endl;
 
 		elapsed_time_o.close();
 

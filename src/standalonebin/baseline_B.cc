@@ -1,6 +1,6 @@
 // standalone/baseline_A
 
-// Copyright      2018   Universitat Polit√cnica de Catalunya (author: Dennis Pinto)
+// Copyright      2018   Universitat Polite√cnica de Catalunya (author: Dennis Pinto)
 //					     Based on nnet2bin/nnet-latgen-faster.cc
 
 // See ../../COPYING for clarification regarding multiple authors
@@ -41,8 +41,6 @@
 
 
 
-bool DecodeUtteranceLattice_();
-
 
 int main(int argc, char *argv[]) {
   try {
@@ -57,8 +55,13 @@ int main(int argc, char *argv[]) {
 		using fst::ReadFstKaldi;
 
     const char *usage =
-        "Generate lattices using neural net model.\n"
-        "Usage: baseline_A [options] <nnet-in-filename> <fst-in-filename> <feature-rspecifier>\n";
+        "Generate lattices using a nnet3 model.\n"
+        "Usage: baseline_A [options] <nnet-in-filename> <fst-in-filename> <feature-rspecifier>\n"
+				"									<word-symbol-filename> <transcription-wspecifier>\n"
+				"									<old-lm-fst-filename> <new-lm-fst-filename>\n"
+				"									<time-log-filename>\n"
+				"Example: baseline_A tdnn.mdl decode.fst ark:probs.ark words.txt ark,t:trans.txt old-lm.fst new-lm.fst time.csv\n";
+
     ParseOptions po(usage);
     Timer timer;
 		Timer global_timer;
@@ -78,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 7) {
+    if (po.NumArgs() != 8) {
       po.PrintUsage();
       exit(1);
     }
@@ -89,9 +92,10 @@ int main(int argc, char *argv[]) {
 				word_symbol_filename = po.GetArg(4),
 				words_wspecifier = po.GetArg(5),
 				lm_to_subtract_filename = po.GetArg(6),
-				lm_to_add_filename = po.GetArg(7);
+				lm_to_add_filename = po.GetArg(7),
+				time_log_filename = po.GetArg(8);
 
-		std::ofstream time_o("decode_time.csv");
+		std::ofstream time_o(time_log_filename);
 
 
 		// Decode objects
@@ -123,7 +127,7 @@ int main(int argc, char *argv[]) {
 			lm_to_add = new fst::ScaleDeterministicOnDemandFst(lm_scale, lm_to_add_orig);
 		}
 
-		time_o << "utterance, global, decode, lmrescore, path_extraction, global_RTF" << std::endl;
+		time_o << "utterance, frames, fps, global(s), decode(s), LSTM lmrescore(s), path_extraction (s)" << std::endl;
 
 		// Symbol table and word writer
 		fst::SymbolTable *word_syms;
@@ -168,7 +172,8 @@ int main(int argc, char *argv[]) {
 				//nnet_decodable.ComputeFromModel(am_nnet, features, pad_input, acoustic_scale);
 				//nnet_decodable.ReadProbsFromFile(posteriors_filename, true);
 				nnet_decodable.ReadProbsFromMatrix(posteriors);
-				
+
+				// Start global timer and decode timer				
 				global_timer.Reset();
 				timer.Reset();
 				if (!decoder.Decode(&nnet_decodable)) {
@@ -176,6 +181,7 @@ int main(int argc, char *argv[]) {
 					num_fail++;
 					continue;
 				}
+				// Stop decode timer
 				decode_elapsed = timer.Elapsed();
 
 				if (!decoder.ReachedFinal()) {
@@ -189,6 +195,7 @@ int main(int argc, char *argv[]) {
 				CompactLattice clat;
 				decoder.GetRawLattice(&lat);
 
+				// Start lmrescore timer
 				timer.Reset();
 				fst::Connect(&lat);
 
@@ -214,6 +221,7 @@ int main(int argc, char *argv[]) {
 					continue;
 				}
 				
+				// Stop lmrescore timer
 				lmrescore_elapsed = timer.Elapsed();
 				num_success_lm++;
 
@@ -241,6 +249,7 @@ int main(int argc, char *argv[]) {
 				scale[1][0] = lm2acoustic_scale;
 				scale[1][1] = acoustic_scale;
 				
+				// Start best path timer
 				timer.Reset();
 				ScaleLattice(scale, &composed_clat);
 
@@ -252,6 +261,8 @@ int main(int argc, char *argv[]) {
 				Lattice best_path;
 
 				CompactLatticeShortestPath(composed_clat, &clat_best_path);
+
+				// Stop best path timer and global timer
 				bestpath_elapsed = timer.Elapsed();
 				global_elapsed = global_timer.Elapsed();				
 
@@ -284,9 +295,9 @@ int main(int argc, char *argv[]) {
 				std::cout << std::endl;
 
 				// Print time measurements to csv file
-				time_o << utt << ", " << global_elapsed << ", " << decode_elapsed << ", ";
+				time_o << utt << ", " << posteriors.NumRows() << ", 100, ";
+				time_o << global_elapsed << ", " << decode_elapsed << ", ";
 				time_o << lmrescore_elapsed << ", " << bestpath_elapsed << ", ";
-				time_o << posteriors.NumRows() << ", " << (global_elapsed*100.0/posteriors.NumRows()); 
 				time_o << std::endl;
 				
 			}
