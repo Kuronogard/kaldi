@@ -993,6 +993,14 @@ class FixedAffineComponent: public Component {
                         Component *to_update,
                         CuMatrixBase<BaseFloat> *in_deriv) const;
 
+	virtual void GetStatistics(ComponentStatistics& statistics) {
+		statistics.valid = true;
+		statistics.numInputs = linear_params_.NumCols();
+		statistics.numOutputs = linear_params_.NumRows();
+		statistics.numWeights = linear_params_.NumRows() * linear_params_.NumCols() + bias_params_.Dim();
+		statistics.sizeBytes = 	linear_params_.SizeInBytes() + bias_params_.Dim() * sizeof(BaseFloat);
+		statistics.info = "FixedAffineComponent, rows, cols, weights, size";
+	}
 
   virtual Component* Copy() const;
   virtual void Read(std::istream &is, bool binary);
