@@ -54,6 +54,8 @@ cmvn_ark_file=${feat_dir}/cmvn/cmvn.ark
 cmvn_scp_file=${feat_dir}/cmvn/cmvn.scp
 ivector_ark_file=${feat_dir}/ivector/ivector.ark
 ivector_scp_file=${feat_dir}/ivector/ivector.scp
+feats_ark_file=${feat_dir}/feats.ark
+feats_scp_file=${feat_dir}/feats.scp
 
 # Temporary files
 temp_dir=${feat_dir}/temp
@@ -138,6 +140,7 @@ echo "--max-count=0" >> ${ivector_conf_file}
 # make_mfcc.sh --nj 70 --mfcc-config conf/mfcc_hires.conf --cmd "${train_cmd}" data/<test-set>_hires
 echo "Compute Mfcc features"
 time (compute-mfcc-feats --verbose=2 --config=${mfcc_conf_file} scp,p:${wav_scp_file} ark:temp.ark)
+sync
 copy-feats --compress=true ark:temp.ark ark,scp:${mfcc_ark_file},${mfcc_scp_file}
 
 rm temp.ark
@@ -163,9 +166,13 @@ compute-cmvn-stats --spk2utt=ark:${utt2spk_file} scp:${mfcc_scp_file} ark,scp:${
 #		exp/nnet3_cleaned/ivectors_<testset>_hires
 echo "Compute iVectors"
 time (ivector-extract-online2 --config=${ivector_conf_file} ark:${spk2utt_file} scp:${mfcc_scp_file} ark:temp.ark)
+sync
 copy-feats --compress=true ark:temp.ark ark,scp:${ivector_ark_file},${ivector_scp_file}
 
 rm temp.ark
+
+sync
+exit
 
 ##############################################
 ## COMPUTE FINAL FEATURE VECTORS
@@ -176,7 +183,7 @@ rm temp.ark
 #
 # This script can apply the cmvn transform and leave the concatenation for the baseline_B program
 
-# cmvn_opts=`cat $srcdir/cmvn_opts`
-# feats="ark,s,cs:apply-cmvn $cmvn_opts --utt2spk=ark:$sdata/JOB/utt2spk scp:$sdata/JOB/cmvn.scp scp:$sdata/JOB/feats.scp ark:- |"
+#cmvn_opts=`cat $srcdir/cmvn_opts`
+#apply-cmvn $cmvn_opts --utt2spk=ark:${utt2spk_file} scp:${cmvn_scp_file} scp:${mfcc_scp_file} ark,scp:${feats_ark_file},${feats_scp_file}
 # ivector_opts="--online-ivectors=scp:$online_ivector_dir/ivector_online.scp --online-ivector-period=$ivector_period"
  

@@ -379,8 +379,9 @@ void DecodableAmNnetSimpleWithIO::ComputeFromModel(
 	//std::cout << "Num pdf ids: " << trans_model_.NumPdfs() << std::endl;
 	//std::cout << "log_probs_ size: " << log_probs_.NumRows() << ", " << log_probs_.NumCols() << std::endl;
 
+	int32 subsampling = opts.frame_subsampling_factor;
 	// Go though all the frames computing the network and saving the posteriors in log_probs_
-	for(int32 frame = 0; frame < feats.NumRows(); frame++) {
+	for(int32 frame = 0; frame < (feats.NumRows()+subsampling-1)/subsampling; frame++) {
 		Vector<BaseFloat> probs(trans_model_.NumPdfs());
 		//std::cout << "Probs dim: " << probs.Dim() << std::endl;
 		decodable_nnet.GetOutputForFrame(frame, &probs);

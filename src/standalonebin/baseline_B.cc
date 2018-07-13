@@ -75,9 +75,9 @@ int main(int argc, char *argv[]) {
 		ComposeLatticePrunedOptions compose_opts;
 		BaseFloat lm_scale = 1.0;
 		//bool add_const_arpa = false;
-
-
-    //po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
+	
+		compose_opts.Register(&po);
+   //po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
 
     po.Read(argc, argv);
 
