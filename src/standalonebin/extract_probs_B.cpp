@@ -44,8 +44,7 @@ int main(int argc, char **argv) {
 		po.Register("use-gpu", &use_gpu, "Use GPU when possible (yes|no) (default:yes).");
 		po.Register("time-log", &time_log, "File to store time logs.");
 		po.Register("energy-log", &energy_log, "File to store snergy logs.");
-		po.Register("profile", &profile, "File to store profile information, such as execution time and energy"
-					"consumption. This file contains a sumary of all the different logs.");
+		po.Register("profile", &profile, "File to store profile information, such as execution time and energy consumption. This file contains a sumary of all the different logs.");
 
 		decodable_opts.Register(&po);
 
@@ -92,6 +91,11 @@ int main(int argc, char **argv) {
 			profile_o << ", avg power CPU (mW), avg power GPU (mW) ";
 			profile_o << ", energy CPU (mJ), energy GPU (mJ)" << std::endl;
 		}
+
+
+#if HAVE_CUDA==1
+		CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
 
 
 		TransitionModel trans_model;
@@ -145,7 +149,7 @@ int main(int argc, char **argv) {
 			double energyCPU = resourceMonitor.getTotalEnergyCPU();
 			double energyGPU = resourceMonitor.getTotalEnergyGPU();
 
-
+			// Store utterance name, elapsed time
 
 			if (time_o.is_open()) {
 				time_o << utt << ", " << features.NumRows() << ", " << elapsed << std::endl;
@@ -162,7 +166,6 @@ int main(int argc, char **argv) {
 				profile_o << std::endl;
 			}
 		
-
 			posterior_writer.Write(utt, nnet_decodable.GetLogProbs());
 
 			frame_count += features.NumRows();
@@ -171,7 +174,6 @@ int main(int argc, char **argv) {
 		}
 		std::cout << "Finished computing posterior probabilities." << std::endl;
 		std::cout << "Total frames is " << frame_count << " for " << utt_count << " utterances." << std::endl;
-
 
 		if (time_o.is_open()) time_o.close();
 		if (energy_o.is_open()) energy_o.close();
