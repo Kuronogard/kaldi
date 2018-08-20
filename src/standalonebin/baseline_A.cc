@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 7) {
+    if (po.NumArgs() != 8) {
       po.PrintUsage();
       exit(1);
     }
@@ -100,9 +100,10 @@ int main(int argc, char *argv[]) {
 				word_symbol_filename = po.GetArg(4),
 				words_wspecifier = po.GetArg(5),
 				lm_to_subtract_filename = po.GetArg(6),
-				lm_to_add_filename = po.GetArg(7);
+				lm_to_add_filename = po.GetArg(7),
+				time_log_filename = po.GetArg(8);
 
-		std::ofstream time_o("decode_time.csv");
+		std::ofstream time_o(time_log_filename);
 
 
 		// Decode objects
@@ -134,7 +135,7 @@ int main(int argc, char *argv[]) {
 			lm_to_add = new fst::ScaleDeterministicOnDemandFst(lm_scale, lm_to_add_orig);
 		}
 
-		time_o << "utterance, global, decode, lmrescore, path_extraction, global_RTF" << std::endl;
+		time_o << "utterance, frames, fps, global, decode, lmrescore, path_extraction" << std::endl;
 
 		// Symbol table and word writer
 		fst::SymbolTable *word_syms;
@@ -150,6 +151,7 @@ int main(int argc, char *argv[]) {
 		//timer.Reset();
 
     kaldi::int64 frame_count = 0;
+    kaldi::int64 utt_count = 0;
     int32 num_success = 0, num_fail = 0;
 		int32 num_success_lm = 0, num_fail_lm = 0;
 		{
@@ -195,7 +197,8 @@ int main(int argc, char *argv[]) {
 
 				frame_count += posteriors.NumRows();
 				num_success++;
-
+				utt_count++;
+				
 				Lattice lat;
 				CompactLattice clat;
 				decoder.GetRawLattice(&lat);
@@ -295,15 +298,16 @@ int main(int argc, char *argv[]) {
 				std::cout << std::endl;
 
 				// Print time measurements to csv file
-				time_o << utt << ", " << global_elapsed << ", " << decode_elapsed << ", ";
-				time_o << lmrescore_elapsed << ", " << bestpath_elapsed << ", ";
-				time_o << posteriors.NumRows() << ", " << (global_elapsed*100.0/posteriors.NumRows()); 
+				time_o << utt << ", " << posteriors.NumRows() << ", 100, " << global_elapsed << ", ";
+				time_o << decode_elapsed << ", " << lmrescore_elapsed << ", " << bestpath_elapsed; 
 				time_o << std::endl;
 				
 			}
 		}
 		delete decode_fst; // delete this only after decoder goes out of scope.
 		time_o.close();
+
+	std::cout << "Total frames are " << frame_count << " for " << utt_count << " utterances." << std::endl;
 
     //double elapsed = timer.Elapsed();
 /*

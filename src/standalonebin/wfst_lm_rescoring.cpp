@@ -10,6 +10,7 @@
 #include "lat/lattice-functions.h"
 #include "lm/const-arpa-lm.h"
 #include "base/timer.h"
+#include "cudamatrix/cu-device.h"
 
 int main(int argc, char **argv) {
 
@@ -38,11 +39,12 @@ int main(int argc, char **argv) {
 	BaseFloat word_ins_penalty = 0.0;
 	std::string symbol_table = "";
 	std::string time_log = "";
+	std::string use_gpu = "yes";
 
 	int32 num_states_cache = 50000;
 
 
-
+	po.Register("use-gpu", &use_gpu, "Use gpu when possible (yes|no) (default: yes)");
 	po.Register("rescore-lm-scale", &rescore_lm_scale, "Scaling factor for language model cost, used only when rescoring");
 	po.Register("lm-scale", &lm_scale, "Scaling factor for language model cost. Used only for best path evaluation");
 	po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic cost. Used only for best path evaluation");
@@ -63,6 +65,13 @@ int main(int argc, char **argv) {
 							newLM_filename = po.GetArg(3),
 							transcription_wspecifier = po.GetArg(4);
 
+
+#if HAVE_CUDA==1
+		CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
+
+
+
 	Timer rescore_timer;
 	
 
@@ -71,9 +80,6 @@ int main(int argc, char **argv) {
 	std_old_LM = ReadFstKaldi(oldLM_filename);
 	if (std_old_LM->Properties(fst::kILabelSorted, true) == 0) {
 		ArcSort(std_old_LM, fst::ILabelCompare<StdArc>());
-	}
-	if (std_old_LM->Start() == fst::kNoStateId ) {
-		KALDI_WARN << "old_LM empty";
 	}
 
 
@@ -85,9 +91,6 @@ int main(int argc, char **argv) {
 
   delete std_old_LM;
 
-	if (old_LM.Start() == fst::kNoStateId) {
-		KALDI_WARN << "old LM map empty";
-	}
 
 
 	// These lines are an optimization for the composition
@@ -107,7 +110,7 @@ int main(int argc, char **argv) {
 	fst::SymbolTable *word_symbols = 0;
 	if ( symbol_table != "" ) {
 		if ( !(word_symbols = fst::SymbolTable::ReadText(symbol_table)) ) {
-			KALDI_ERR << "Could not read symbol table" << symbol_table;
+			KALDI_ERR << "Could not read symbol table " << symbol_table;
 		}
 	}
 
@@ -115,11 +118,15 @@ int main(int argc, char **argv) {
 	if ( time_log != "" ) {
 		time_o.open(time_log);
 		if ( !time_o.is_open() ) {
-			KALDI_WARN << "Could not open time log file" << time_log;
+			KALDI_WARN << "Could not open time log file " << time_log;
+		} 
+		else {
+			time_o << "Utterance, time (s)" << std::endl;
 		}
 	}
 	
 
+	int32 num_success = 0, num_fail = 0;
 
 	for(; !lattice_reader.Done(); lattice_reader.Next()) {
 		std::string utt = lattice_reader.Key();
@@ -143,17 +150,11 @@ int main(int argc, char **argv) {
 		std::cout << "Remove old weights" << std::endl;
 
 		fst::ScaleLattice(fst::GraphLatticeScale(-1.0/rescore_lm_scale), &lat);
-		if ( lat.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Scale went wrong" << std::endl;
-		}
 
 		//KALDI_WARN << "old_LM arcs " << old_LM.NumArcs(1);
 		//KALDI_WARN << "qewdqwe";
 
 		ArcSort(&lat, fst::OLabelCompare<LatticeArc>());
-		if ( lat.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Sort went wrong" << std::endl;
-		}
 
 
 
@@ -161,29 +162,19 @@ int main(int argc, char **argv) {
 		//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
 		Compose(lat, old_LM, &lat_nolm);
 		if ( lat_nolm.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Compose went wrong" << std::endl;
+			std::cout << "[WARN." << utt << "]: Unscored lattice is empty." << std::endl;
+			num_fail++;
+      continue;
 		}
-
-
 
 		Invert(&lat_nolm);
-		if ( lat_nolm.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Invert went wrong" << std::endl;
-		}
-
-
-		CompactLattice clat_nolm_determinized;
+		
+    CompactLattice clat_nolm_determinized;
 		DeterminizeLattice(lat_nolm, &clat_nolm_determinized);
-		if ( clat_nolm_determinized.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Determinization went wrong" << std::endl;
-		}
 
 
 		fst::ScaleLattice(fst::GraphLatticeScale(-1), &clat_nolm_determinized);
 
-		if ( clat_nolm_determinized.Start() == fst::kNoStateId ) {
-			std::cout << "Lattice is empty. Something went wrong" << std::endl;
-		}
 
 		// ---------------------------------------------------
 		//		Add new LM weights	
@@ -193,26 +184,32 @@ int main(int argc, char **argv) {
 		// Determinizar lattice
 		// Escalar por lm_scale
 
-		std::cerr << "Add new weights" << std::endl;
+		std::cout << "Add new weights" << std::endl;
 
 		ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
 		ConstArpaLmDeterministicFst new_LM_wrapped(new_LM);
 
-		std::cerr << "Compose with LM" << std::endl;
+		std::cout << "Compose with LM" << std::endl;
 		CompactLattice clat_rescored;
 		ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
+		if (clat_rescored.Start() == fst::kNoStateId) {
+			std::cout << "[WARN." << utt << "]: Rescored lattice is empty." << std::endl;
+			num_fail++;
+			continue;
+		}
 
-		std::cerr << "Convert to normal lattice and invert" << std::endl;
+
+		std::cout << "Convert to normal lattice and invert" << std::endl;
 		Lattice lat_rescored;
 		ConvertLattice(clat_rescored, &lat_rescored);
 		Invert(&lat_rescored);
 
-		std::cerr << "Determinize lattice" << std::endl;
+		std::cout << "Determinize lattice" << std::endl;
 		CompactLattice clat_rescored_determinized;
 		DeterminizeLattice(lat_rescored, &clat_rescored_determinized);
 
 
-		std::cerr << "Scale lattice" << std::endl;
+		std::cout << "Scale lattice" << std::endl;
 		fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
 
 		double rescore_elapsed = rescore_timer.Elapsed();
@@ -256,6 +253,14 @@ int main(int argc, char **argv) {
 		LatticeWeight weight;
 		GetLinearSymbolSequence(lat_best_path, &phones, &words, &weight);		
 
+		if (words.size() == 0) {
+			std::cout << "[WARN." << utt << "]: Empty transcription" << std::endl;
+      num_fail++;
+			continue;
+		}
+
+		num_success++;
+
 		// write symbols
 		trans_writer.Write(utt, words);
 
@@ -278,6 +283,9 @@ int main(int argc, char **argv) {
 		}
 
 	}
+
+  std::cout << "Overall: " << num_success << " success, " << num_fail << " fail." << std::endl;
+
 
 	delete word_symbols;
 	time_o.close();

@@ -8,7 +8,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
+#include "cudamatrix/cu-device.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "base/timer.h"
@@ -24,32 +26,53 @@ int main(int argc, char **argv) {
 		
 		
 		const char *usage =
-				"Generate posterior probabilities from features";
+				"Generate posterior probabilities from features.\n"
+				"Usage: extract_probs <online-ivector-rspecifier> <features-rspecifier> <AM-nnet-filename> <posteriors-wspecifier>";
 
 		ParseOptions po(usage);
 		
 		NnetSimpleComputationOptions decodable_opts;
 
 		int32 online_ivector_period = 10;
-		decodable_opts.Register(&po);
+		std::string use_gpu = "yes";
+		std::string time_log = "";
 
 		Timer timer;
 		//bool pad_input = true;
 		//BaseFloat acoustic_scale = 0.1;
 
+		po.Register("use-gpu", &use_gpu, "Use GPU when possible (yes|no) (default:yes).");
+		po.Register("time-log", &time_log, "File to store time logs.");
+
+		decodable_opts.Register(&po);
+
 		po.Read(argc, argv);
-		if (po.NumArgs() < 5 || po.NumArgs() > 5) {
+		if (po.NumArgs() < 4 || po.NumArgs() > 4) {
 			po.PrintUsage();
 			exit(1);
 		}
 
-		std::string online_ivector_rspecifier = po.GetArg(1);
-		std::string features_rspecifier = po.GetArg(2);
-		std::string ac_model_filename = po.GetArg(3);
-		std::string posterior_wspecifier = po.GetArg(4);
-		std::string time_log_filename = po.GetArg(5);	
+		std::string online_ivector_rspecifier = po.GetArg(1),
+								features_rspecifier = po.GetArg(2),
+								ac_model_filename = po.GetArg(3),
+								posterior_wspecifier = po.GetArg(4);	
 
-		std::ofstream elapsed_time_o(time_log_filename);
+
+		
+		std::ofstream time_o;
+		if (time_log != "") {
+			time_o.open(time_log);
+			if (!time_o.is_open()) {
+				KALDI_ERR << "Could not open time log file " << time_log;
+			}
+			time_o << "utterance, frames, execution time" << std::endl;
+		}
+
+
+#if HAVE_CUDA==1
+		CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
+
 
 		TransitionModel trans_model;
 		AmNnetSimple am_nnet;
@@ -72,7 +95,6 @@ int main(int argc, char **argv) {
 		CachingOptimizingCompiler compiler(am_nnet.GetNnet(), decodable_opts.optimize_config);
 
 
-		elapsed_time_o << "utterance, frames, fps, execution time" << std::endl;
 
 		kaldi::int64 frame_count = 0;
 		kaldi::int64 utt_count = 0;		
@@ -92,18 +114,22 @@ int main(int argc, char **argv) {
 			
 			double elapsed = timer.Elapsed();
 
-			// Store utterance name, elapsed time and real time factor
-			elapsed_time_o << utt << ", " << features.NumRows() << ", 100, " << elapsed << std::endl;
+			// Store utterance name, elapsed time
+
+			if (time_o.is_open()) {
+				time_o << utt << ", " << features.NumRows() << ", " << elapsed << std::endl;
+			}
 
 			posterior_writer.Write(utt, nnet_decodable.GetLogProbs());
-			//nnet_decodable.WriteProbsToTable(posterior_writer, utt);
+
 			frame_count += features.NumRows();
 			utt_count++;
+
 		}
 		std::cout << "Finished computing posterior probabilities." << std::endl;
 		std::cout << "Total frames is " << frame_count << " for " << utt_count << " utterances." << std::endl;
 
-		elapsed_time_o.close();
+		time_o.close();
 
 		return 0;
 

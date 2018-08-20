@@ -18,7 +18,12 @@
 // See the Apache 2 License for the specific language governing permissions and
 // limitations under the License.
 
+
+#include <iostream>
+#include <fstream>
+
 #include "base/kaldi-common.h"
+#include "base/timer.h"
 #include "util/common-utils.h"
 #include "feat/feature-mfcc.h"
 #include "feat/wave-reader.h"
@@ -41,6 +46,7 @@ int main(int argc, char *argv[]) {
     BaseFloat min_duration = 0.0;
     // Define defaults for gobal options
     std::string output_format = "kaldi";
+		Timer feat_timer;
 
     // Register the MFCC option struct
     mfcc_opts.Register(&po);
@@ -63,7 +69,7 @@ int main(int argc, char *argv[]) {
 
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 2) {
+    if (po.NumArgs() != 3) {
       po.PrintUsage();
       exit(1);
     }
@@ -71,6 +77,11 @@ int main(int argc, char *argv[]) {
     std::string wav_rspecifier = po.GetArg(1);
 
     std::string output_wspecifier = po.GetArg(2);
+
+		std::string time_log_filename = po.GetArg(3);
+
+
+		
 
     Mfcc mfcc(mfcc_opts);
 
@@ -95,6 +106,10 @@ int main(int argc, char *argv[]) {
     } else {
       KALDI_ERR << "Invalid output_format string " << output_format;
     }
+
+
+		std::ofstream time_o(time_log_filename);
+		time_o << "Utterance, frames, time (s)" << std::endl;
 
     int32 num_utts = 0, num_success = 0;
     for (; !reader.Done(); reader.Next()) {
@@ -138,11 +153,14 @@ int main(int argc, char *argv[]) {
 
       SubVector<BaseFloat> waveform(wave_data.Data(), this_chan);
       Matrix<BaseFloat> features;
+
+			feat_timer.Reset();
       try {
         mfcc.ComputeFeatures(waveform, wave_data.SampFreq(), vtln_warp_local, &features);
       } catch (...) {
         KALDI_WARN << "Failed to compute features for utterance "
                    << utt;
+				time_o << utt << "_FAILLURE, 0, 0" << std::endl;
         continue;
       }
       if (subtract_mean) {
@@ -152,6 +170,9 @@ int main(int argc, char *argv[]) {
         for (int32 i = 0; i < features.NumRows(); i++)
           features.Row(i).AddVec(-1.0, mean);
       }
+			double feat_elapsed = feat_timer.Elapsed();		
+			time_o << utt << ", " << features.NumRows() << ", " << feat_elapsed << std::endl;
+
       if (output_format == "kaldi") {
         kaldi_writer.Write(utt, features);
       } else {
@@ -173,6 +194,9 @@ int main(int argc, char *argv[]) {
       KALDI_VLOG(2) << "Processed features for key " << utt;
       num_success++;
     }
+
+		time_o.close();
+
     KALDI_LOG << " Done " << num_success << " out of " << num_utts
               << " utterances.";
     return (num_success != 0 ? 0 : 1);

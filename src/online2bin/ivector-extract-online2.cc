@@ -18,7 +18,11 @@
 // limitations under the License.
 
 
+#include <iostream>
+#include <fstream>
+
 #include "base/kaldi-common.h"
+#include "base/timer.h"
 #include "util/common-utils.h"
 #include "gmm/am-diag-gmm.h"
 #include "online2/online-ivector-feature.h"
@@ -64,15 +68,20 @@ int main(int argc, char *argv[]) {
                 "(including repeated data).");
     po.Read(argc, argv);
     
-    if (po.NumArgs() != 3) {
+    if (po.NumArgs() != 4) {
       po.PrintUsage();
       exit(1);
     }
     
     std::string spk2utt_rspecifier = po.GetArg(1),
         feature_rspecifier = po.GetArg(2),
-        ivectors_wspecifier = po.GetArg(3);
-    
+        ivectors_wspecifier = po.GetArg(3),
+				time_log_filename = po.GetArg(4);    
+
+		Timer feat_timer;
+
+		std::ofstream time_o(time_log_filename);
+
     double tot_ubm_loglike = 0.0, tot_objf_impr = 0.0, tot_t = 0.0,
         tot_length = 0.0, tot_length_utt_end = 0.0;
     int32 num_done = 0, num_err = 0;
@@ -84,6 +93,8 @@ int main(int argc, char *argv[]) {
     RandomAccessBaseFloatMatrixReader feature_reader(feature_rspecifier);
     BaseFloatMatrixWriter ivector_writer(ivectors_wspecifier);
     
+
+		time_o << "Utterance, Frames, Time (s)" << std::endl;
     
     for (; !spk2utt_reader.Done(); spk2utt_reader.Next()) {
       std::string spk = spk2utt_reader.Key();
@@ -100,6 +111,8 @@ int main(int argc, char *argv[]) {
         const Matrix<BaseFloat> &feats = feature_reader.Value(utt);
         
         OnlineMatrixFeature matrix_feature(feats);
+
+				feat_timer.Reset();
 
         OnlineIvectorFeature ivector_feature(ivector_info,
                                              &matrix_feature);
@@ -118,6 +131,9 @@ int main(int argc, char *argv[]) {
           SubVector<BaseFloat> ivector(ivectors, i);
           ivector_feature.GetFrame(t, &ivector);
         }
+
+				double elapsed = feat_timer.Elapsed();
+				time_o << utt << ", " << feats.NumRows() << ", " << elapsed << std::endl;
         // Update diagnostics.
 
         tot_ubm_loglike += T * ivector_feature.UbmLogLikePerFrame();
@@ -139,6 +155,8 @@ int main(int argc, char *argv[]) {
         num_done++;
       }
     }
+
+		time_o.close();
 
     KALDI_LOG << "Estimated iVectors for " << num_done << " files, " << num_err
               << " with errors.";

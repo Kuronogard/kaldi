@@ -22,6 +22,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "cudamatrix/cu-device.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "tree/context-dep.h"
@@ -69,6 +70,7 @@ int main(int argc, char *argv[]) {
 		//bool pad_input = true;
     LatticeFasterDecoderConfig config;
 
+    std::string use_gpu = "no";
     std::string word_syms_filename;
     config.Register(&po);
 		
@@ -77,7 +79,7 @@ int main(int argc, char *argv[]) {
 		//bool add_const_arpa = false;
 	
 		compose_opts.Register(&po);
-   //po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
+    po.Register("use-gpu", &use_gpu, "use gpu when possible (yes|no) (default: no)");
 
     po.Read(argc, argv);
 
@@ -97,6 +99,10 @@ int main(int argc, char *argv[]) {
 
 		std::ofstream time_o(time_log_filename);
 
+
+#if HAVE_CUDA==1
+    CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
 
 		// Decode objects
     TransitionModel trans_model;

@@ -17,8 +17,11 @@
 // See the Apache 2 License for the specific language governing permissions and
 // limitations under the License.
 
+#include <iostream>
+#include <fstream>
 
 #include "base/kaldi-common.h"
+#include "base/timer.h"
 #include "util/common-utils.h"
 #include "gmm/am-diag-gmm.h"
 #include "ivector/ivector-extractor.h"
@@ -69,7 +72,7 @@ int main(int argc, char *argv[]) {
                 "posterior scale (so typically 0.1 times a number of frames).");
     po.Read(argc, argv);
 
-    if (po.NumArgs() != 4) {
+    if (po.NumArgs() != 5) {
       po.PrintUsage();
       exit(1);
     }
@@ -77,8 +80,12 @@ int main(int argc, char *argv[]) {
     std::string ivector_extractor_rxfilename = po.GetArg(1),
         feature_rspecifier = po.GetArg(2),
         posteriors_rspecifier = po.GetArg(3),
-        ivectors_wspecifier = po.GetArg(4);
+        ivectors_wspecifier = po.GetArg(4),
+				time_log_filename = po.GetArg(5);
 
+		std::ofstream time_o(time_log_filename);
+
+		Timer ivector_timer;
     IvectorExtractor extractor;
     ReadKaldiObject(ivector_extractor_rxfilename, &extractor);
 
@@ -90,6 +97,7 @@ int main(int argc, char *argv[]) {
     RandomAccessPosteriorReader posteriors_reader(posteriors_rspecifier);
     BaseFloatMatrixWriter ivector_writer(ivectors_wspecifier);
 
+		time_o << "Utterance, Frames, Time (s)" << std::endl;
 
     for (; !feature_reader.Done(); feature_reader.Next()) {
       std::string utt = feature_reader.Key();
@@ -108,7 +116,8 @@ int main(int argc, char *argv[]) {
         num_err++;
         continue;
       }
-
+			
+			ivector_timer.Reset();
 
       Matrix<BaseFloat> ivectors;
       double objf_impr_per_frame;
@@ -119,6 +128,9 @@ int main(int argc, char *argv[]) {
       BaseFloat offset = extractor.PriorOffset();
       for (int32 i = 0 ; i < ivectors.NumRows(); i++)
         ivectors(i, 0) -= offset;
+
+			double elapsed = ivector_timer.Elapsed(); 
+			time_o << utt << ", " << ivectors.NumRows() << ", " << elapsed << std::endl;
 
       double tot_post = TotalPosterior(posterior);
 
@@ -137,6 +149,8 @@ int main(int argc, char *argv[]) {
 
       num_done++;
     }
+
+		time_o.close();
 
     KALDI_LOG << "Estimated iVectors for " << num_done << " files, " << num_err
               << " with errors.";
