@@ -8,20 +8,21 @@ include ../kaldi.mk
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
-BINFILES = baseline_A extract_probs extract_probs_B baseline_B extract_nnet3_statistics
+BINFILES = aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
 
 OBJFILES =
 
 
 ADDLIBS = ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a \
-          ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a \
+          ../rnnlm/kaldi-rnnlm.a ../lm/kaldi-lm.a \
+					../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a \
           ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a \
           ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a \
           ../feat/kaldi-feat.a ../transform/kaldi-transform.a \
           ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a \
           ../matrix/kaldi-matrix.a \
-					../base/kaldi-base.a ../rnnlm/kaldi-rnnlm.a ../lm/kaldi-lm.a 
+					../base/kaldi-base.a
 
 
 #ADDLIBS = ../tree/kaldi-tree.a \
