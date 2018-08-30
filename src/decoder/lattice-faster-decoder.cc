@@ -831,8 +831,12 @@ void LatticeFasterDecoderTpl<FST>::ProcessNonemitting(BaseFloat cutoff) {
   // problem did not improve overall speed.
 
   KALDI_ASSERT(queue_.empty());
-
-  if (toks_.GetList() == NULL) {
+  for (const Elem *e = toks_.GetList(); e != NULL;  e = e->tail) {
+    StateId state = e->key;
+    if (fst_.NumInputEpsilons(state) != 0)
+      queue_.push_back(state);
+  }
+  if (queue_.empty()) {
     if (!warned_) {
       KALDI_WARN << "Error, no surviving tokens: frame is " << frame;
       warned_ = true;
@@ -877,7 +881,7 @@ void LatticeFasterDecoderTpl<FST>::ProcessNonemitting(BaseFloat cutoff) {
 
           // "changed" tells us whether the new token has a different
           // cost from before, or is new [if so, add into queue].
-          if (changed && fst_->NumInputEpsilons(arc.nextstate) != 0)
+          if (changed && fst_.NumInputEpsilons(arc.nextstate) != 0) 
             queue_.push_back(arc.nextstate);
         }
       }
