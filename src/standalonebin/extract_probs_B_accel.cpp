@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
 				time_o << utt << ", " << features.NumRows() << elapsed << std::endl;
 			}
 
-			std::ofstream acf(posterior_base_filename + "_" + utt + ".acprobs");
+			std::ofstream acf(posterior_base_filename + utt + ".acprobs");
 			assert(acf.is_open());
 			const Matrix<BaseFloat>& ac_mat = nnet_decodable.GetLogProbs();
 			unsigned int num_frames = static_cast<unsigned int>(ac_mat.NumRows());
