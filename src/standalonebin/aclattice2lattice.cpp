@@ -45,16 +45,20 @@ int main(int argc, char **argv) {
 
 	const char *usage = 
 			"Converts a lattice from KALDI_SIM accelerator output format to kaldi's lattice format."
-			"usage: aclattice2lattice [options] <utterance-name> <AM-nnet-filename> <aclattice-filename> <lattice-wspecifier";
+			"usage: aclattice2lattice [options] <utterance-name> <AM-nnet-filename> <aclattice-filename> <transcription-wspecifier> <lattice-wspecifier>";
 
 	ParseOptions po(usage);
+	std::string symbol_table = "";
 	std::string time_log = "";
+	BaseFloat acoustic_scale = 0.1;
 
 	po.Register("time-log", &time_log, "File to store time measurements");
+	po.Register("acoustic-scale", &acoustic_scale, "Acoustic scale applied to lattice before computing best path");
+	po.Register("symbol-table", &symbol_table, "Symbol table. If provided, the transcription will be shown on standard output");
 
 	po.Read(argc, argv);
 
-	if (po.NumArgs() != 4) {
+	if (po.NumArgs() != 5) {
 		po.PrintUsage();
 		exit(1);
 	}
@@ -63,7 +67,8 @@ int main(int argc, char **argv) {
 	std::string utterance_name = po.GetArg(1),
 							am_nnet_filename = po.GetArg(2),
 							aclattice_filename = po.GetArg(3),
-							lattice_wspecifier = po.GetArg(4);
+							transcription_wspecifier = po.GetArg(4),
+							lattice_wspecifier = po.GetArg(5);
 
 
 	TransitionModel trans_model;
@@ -80,6 +85,15 @@ int main(int argc, char **argv) {
 	CompactLatticeWriter clattice_writer(lattice_wspecifier);
 	//LatticeWriter lattice_writer(lattice_wspecifier);
 
+
+	fst::SymbolTable *word_symbols = 0;
+	if (symbol_table != "") {
+		if (!(word_symbols = fst::SymbolTable::ReadText(symbol_table)) ) {
+			cerr << "Could not open symbol table " << symbol_table << endl;
+		}
+	}
+
+
 	std::ofstream time_o;
 	if ( time_log != "" ) {
 		time_o.open(time_log);
@@ -91,6 +105,10 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+
+
+	Int32VectorWriter trans_writer(transcription_wspecifier);
+
 
 	vector<Token> tokens;
 	Lattice lat;
@@ -164,7 +182,7 @@ int main(int argc, char **argv) {
 	lat.SetStart(0);
 
 	// Add dst state for all the tokens
-	for(int i = 1; i < tokens.size(); i++) {
+	for(int i = 0; i < tokens.size(); i++) {
 		tok_debug << "TOKEN: " << i << " frame: "  << tokens[i].frame;
 		tok_debug << " link: " << tokens[i].orig_state << " --> " << tokens[i].dst_state;
 		tok_debug << " (pdf: " << tokens[i].pdf << " word: " << tokens[i].wordid << ")";
@@ -216,7 +234,7 @@ int main(int argc, char **argv) {
 	//	lat.addArc(orig_tok, arc);
 	int added_arcs = 0;
 
-	for(int i = 1; i < tokens.size(); i++) {
+	for(int i = 0; i < tokens.size(); i++) {
 		// Sanity check
 		int origframe = tokens[i].frame;
 		int dstframe;
@@ -224,7 +242,6 @@ int main(int argc, char **argv) {
 			dstframe = tokens[i].frame;
 		else
 			dstframe = tokens[i].frame+1;
-
 
 
 		if (token_map[origframe].count(tokens[i].orig_state) != 1) {
@@ -310,7 +327,7 @@ int main(int argc, char **argv) {
 
 	ifst = &lat;
 	ofst = &clat;
-	beam = 17.0;
+	beam = 8;
 
   fst::Invert(ifst);
 
@@ -349,6 +366,40 @@ int main(int argc, char **argv) {
 	//DeterminizeLatticePruned(&lat, 8., &clat);
 
 
+	CompactLattice clat_best_path;
+	CompactLatticeShortestPath(clat, &clat_best_path);
+
+	Lattice best_path;
+	ConvertLattice(clat_best_path, &best_path);
+	if (best_path.Start() == fst::kNoStateId) {
+		cerr << "Best path failed for " << utterance_name << endl;
+		return 0;
+	}
+
+	std::vector<int32> alignment;
+	std::vector<int32> words;
+	LatticeWeight weight;
+
+	GetLinearSymbolSequence(best_path, &alignment, &words, &weight);
+	if (words.size() == 0) {
+		cerr << "[WARN." << utterance_name << "]: Empty transcription" << endl; 
+	}
+	else {
+	
+		trans_writer.Write(utterance_name, words);
+
+		if (word_symbols != 0) {
+			cout << "  " << utterance_name << ": ";
+			for (size_t i = 0; i < words.size(); i++) {
+				string s = word_symbols->Find(words[i]);
+				if (s == "") s = "<ERR>";
+				cout << s << ' ';
+			}
+			cout << endl;
+		}
+	}
+
+
 	clattice_writer.Write(utterance_name, clat);
 
 
@@ -360,6 +411,7 @@ int main(int argc, char **argv) {
 
 	//lattice_writer.Close();
 	clattice_writer.Close();
+	trans_writer.Close();
 	time_o.close();
 
 	return 0;
