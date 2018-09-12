@@ -2,6 +2,16 @@
 #include <nvml.h>
 
 
+struct rawPowerGPU_t {
+	unsigned int power;
+};
+
+
+struct powerGPU_t {
+	double power;
+};
+
+
 class ProbeGPU {
 
 public:
@@ -10,7 +20,8 @@ public:
 	~ProbeGPU();
 
 	void init();
-	void fetchPower(unsigned int *power);
+	void fetchRawPower(rawPowerGPU_t * rawPower);
+	void raw2watt(rawPowerGPU_t * rawPower, powerGPU_t * power);
 
 private:
 

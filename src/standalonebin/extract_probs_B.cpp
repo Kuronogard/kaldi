@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 		std::string energy_log = "";
 		std::string profile = "";
 
-		Timer timer;
+		//Timer timer;
 		ResourceMonitor resourceMonitor;
 
 		//bool pad_input = true;
@@ -88,7 +88,9 @@ int main(int argc, char **argv) {
 			if (!profile_o.is_open()) {
 				KALDI_ERR << "Could not open profile file " << profile;
 			}
-			profile_o << "utterance, frames, time (s), energy (mJ)" << std::endl;
+			profile_o << "utterance, frames, time (s) ";
+			profile_o << ", avg power CPU (mW), avg power GPU (mW) ";
+			profile_o << ", energy CPU (mJ), energy GPU (mJ)" << std::endl;
 		}
 
 
@@ -124,31 +126,40 @@ int main(int argc, char **argv) {
 			const Matrix<BaseFloat> &features(features_reader.Value());
 			const Matrix<BaseFloat> &online_ivectors(online_ivector_reader.Value(utt));
 
-			unsigned long long energy=0;
-
 			std::cout << "Procesando: " << utt << std::endl;
 			
 			DecodableAmNnetSimpleWithIO nnet_decodable(trans_model);
 
 			
-			timer.Reset();
+			//timer.Reset();
+			resourceMonitor.startMonitoring();
 			nnet_decodable.ComputeFromModel(decodable_opts, am_nnet, features, 
 								&online_ivectors, online_ivector_period, &compiler);
-			
-			double elapsed = timer.Elapsed();
+			resourceMonitor.endMonitoring();
+			//double elapsed = timer.Elapsed();
 
-			// Store utterance name, elapsed time
+			// Extract measurements and log them if required
+			double elapsed = resourceMonitor.getTotalExecTime();
+			double avgPowerCPU = resourceMonitor.getAveragePowerCPU();
+			double avgPowerGPU = resourceMonitor.getAveragePowerGPU();
+			double energyCPU = resourceMonitor.getTotalEnergyCPU();
+			double energyGPU = resourceMonitor.getTotalEnergyGPU();
+
+
 
 			if (time_o.is_open()) {
 				time_o << utt << ", " << features.NumRows() << ", " << elapsed << std::endl;
 			}
 
 			if (energy_o.is_open()) {
-				energy_o << utt << ", " << energy << std::endl;
+				energy_o << utt << ", " << energyCPU + energyGPU << std::endl;
 			}
 
 			if (profile_o.is_open()) {
-				profile_o << utt << ", " << features.NumRows() << ", " << elapsed << ", " << energy << std::endl;
+				profile_o << utt << ", " << features.NumRows() << ", " << elapsed;
+				profile_o << ", " << avgPowerCPU << ", " << avgPowerGPU;
+				profile_o << ", " << energyCPU << ", " << energyGPU;
+				profile_o << std::endl;
 			}
 		
 

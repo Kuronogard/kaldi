@@ -9,6 +9,7 @@
 
 using namespace std;
 
+
 ProbeGPU::ProbeGPU() {
 
 }
@@ -64,9 +65,16 @@ void ProbeGPU::init() {
 }
 
 
-void ProbeGPU::fetchPower(unsigned int *power) {
+void ProbeGPU::fetchRawPower(rawPowerGPU_t *rawPower) {
+	nvmlReturn_t result;
 
-	nvmlDeviceGetPowerUsage(device, power);
+	result = nvmlDeviceGetPowerUsage(device, &(rawPower->power));
+	if (result != NVML_SUCCESS) {
+		cerr << "Could not fetch GPU power." << endl;
+	}
 }
 
+void ProbeGPU::raw2watt(rawPowerGPU_t *rawPower, powerGPU_t *power) {
+	power->power = (double)rawPower->power / 1000;
+}
 

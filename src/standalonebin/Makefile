@@ -9,7 +9,7 @@ LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
 
-BINFILES = aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
+BINFILES = rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
 
 OBJFILES = resource_monitor.o probeCPU.o probeGPU.o

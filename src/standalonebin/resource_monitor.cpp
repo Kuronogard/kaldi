@@ -14,7 +14,7 @@ double ResourceMonitor::interval_GPU_power(int i) {
 
 
 double ResourceMonitor::interval_CPU_power(int i) {
-	double time = timeInterval(_timestamp[i+1], _timestamp[i]);
+	double time = timeInterval(_timestamp[i], _timestamp[i+1]);
 	double energy;
 
 	rawEnergyCPU_t rawEnergy_start, rawEnergy_end;
@@ -47,10 +47,12 @@ double ResourceMonitor::interval_CPU_power_est(int i, double prev_power) {
 
 ResourceMonitor::ResourceMonitor() {
 	running = false;
+	pthread_mutex_init(&lock, NULL);
 
 }
 
 ResourceMonitor::~ResourceMonitor() {
+	pthread_mutex_destroy(&lock);
 
 }
 
@@ -81,7 +83,7 @@ void ResourceMonitor::startMonitoring() {
 	running = true;
 
 	gettimeofday(&_startTime, &_timeZone);
-	pthread_create(&monitor_thread, NULL, background_monitor_handler, this);
+	pthread_create(&monitor_thread, NULL, &background_monitor_handler, (void*)this);
 }
 
 
@@ -102,7 +104,6 @@ void ResourceMonitor::endMonitoring() {
 double ResourceMonitor::getTotalEnergyCPU() {
 	// probeCPU fetches energy
 	// Get the first measure, the last one, and substract them
-
 	double energy;
 	rawEnergyCPU_t rawEnergy_start;
 	rawEnergyCPU_t rawEnergy_end;
@@ -152,13 +153,15 @@ double ResourceMonitor::getTotalEnergyGPU() {
 
 double ResourceMonitor::getTotalExecTime() {
 
-	return timeInterval(_timestamp.front(), _timestamp.back());
+	//return timeInterval(_timestamp.front(), _timestamp.back());
+	return timeInterval(_startTime, _endTime);
 }
+
 
 double ResourceMonitor::getAveragePowerCPU() {
 
 	double energy, time;
-	time = timeInterval(_timestamp.front(), _timestamp.back());
+	time = getTotalExecTime();
 	energy = getTotalEnergyCPU();
 
 	return energy/time;
@@ -170,7 +173,7 @@ double ResourceMonitor::getAveragePowerGPU() {
 	int num_intervals = _powerGPU.size()-1;
 
 	for (int i = 0; i < num_intervals; i++) {
-		avg_power = interval_GPU_power(i);
+		avg_power += interval_GPU_power(i);
 	}
 
 	return avg_power/num_intervals;
@@ -211,25 +214,37 @@ void ResourceMonitor::getPowerGPU(vector<double> &timestamp, vector<double> &pow
 	}
 }
 
+/**
+ * Returns the power history for CPU and GPU
+ * intervalTime contains the number of second for the corresponding interval
+ * powerCPU and powerGPU contain the average power for the corresponding interval
+ */
 void ResourceMonitor::getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU) {
 
 	double time;
-	double avg_power = getAveragePowerCPU();
+	//double avg_power = getAveragePowerCPU();
 
 	timestamp.clear();
 	powerCPU.clear();
 	powerGPU.clear();
 
-	time = timeval2double(_timestamp[0]);
-	timestamp.push_back(time);
-	powerCPU.push_back(avg_power);
-	powerGPU.push_back(_powerGPU[0]);
+	//time = 0;
+	//timestamp.push_back(time);
+	//powerCPU.push_back(avg_power);
+	//powerGPU.push_back(_powerGPU[0]);
+
+	//cerr << "Measured " << _timestamp.size() << " times" << endl;
 	
-	for (int i = 1; i < timestamp.size(); i++) {
-		time = timeval2double(_timestamp[i]);
+	for (int i = 0; i < _timestamp.size()-1; i++) {
+		time = timeInterval(_timestamp[i], _timestamp[i+1]);
 		timestamp.push_back(time);
-		powerGPU.push_back(_powerGPU[i]);
-		powerCPU.push_back(interval_CPU_power_est(i, powerCPU[i-1]));
+		powerGPU.push_back(interval_GPU_power(i));
+		powerCPU.push_back(interval_CPU_power(i));
+
+		//time = timeInterval(_startTime, _timestamp[i]);
+		//timestamp.push_back(time);
+		//powerGPU.push_back(_powerGPU[i]);
+		//powerCPU.push_back(interval_CPU_power_est(i, powerCPU[i-1]));
 	}
 
 }
@@ -241,12 +256,31 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 	if (arg == NULL)
 		pthread_exit(NULL);
 
+	cerr << "Inside thread" << endl;
+
 	ResourceMonitor *parent = (ResourceMonitor*)arg;
 
-	while(parent->checkEndMonitor()) {
+	while(!parent->monitorMustEnd()) {
+		timeval timestamp;
+		rawEnergyCPU_t cpuRawEnergy;
+		rawPowerGPU_t gpuRawPower;
+		powerGPU_t gpuPower;
+
+		cerr << "Measuring" << endl;
+
 		// Check time
+		gettimeofday(&timestamp, NULL);		
+
 		// Check CPU energy
+		parent->probeCPU.fetchRawEnergy(&cpuRawEnergy);
+
 		// Check GPU energy
+		parent->probeGPU.fetchRawPower(&gpuRawPower);
+		parent->probeGPU.raw2watt(&gpuRawPower, &gpuPower);
+
+		parent->_timestamp.push_back(timestamp);
+		parent->_energyCPU.push_back(cpuRawEnergy);
+		parent->_powerGPU.push_back(gpuPower.power);
 
 		usleep(0.5*1000000); // 1/2 second
 	}
@@ -254,7 +288,7 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 	pthread_exit(NULL);
 }
 
-bool ResourceMonitor::checkEndMonitor() {
+bool ResourceMonitor::monitorMustEnd() {
 	bool value;
 	pthread_mutex_lock(&lock);
 	value = end_monitoring;
@@ -270,15 +304,15 @@ void ResourceMonitor::setEndMonitor(bool value) {
 }
 
 
-double ResourceMonitor::timeval2double(timeval &time) {
-	return (double)time.tv_sec + (double)time.tv_usec/(1000*1000);
+double ResourceMonitor::timeval2double(struct timeval time) {
+	return static_cast<double>(time.tv_sec) + static_cast<double>(time.tv_usec)/(1000*1000);
 }
 
 double ResourceMonitor::timeInterval(struct timeval start, struct timeval end) {
 		double time_start, time_end;
 
-		time_start = (double)start.tv_sec + (double)start.tv_usec/(1000*1000);
-		time_end = (double)end.tv_sec + (double)end.tv_usec/(1000*1000);
+		time_start = static_cast<double>(start.tv_sec) + static_cast<double>(start.tv_usec)/(1000*1000);
+		time_end = static_cast<double>(end.tv_sec) + static_cast<double>(end.tv_usec)/(1000*1000);
 		
 		return time_end - time_start;
 }

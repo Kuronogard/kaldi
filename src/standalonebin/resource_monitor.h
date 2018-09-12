@@ -51,12 +51,12 @@ private:
 
 
 	static void * background_monitor_handler(void * args);
-	bool checkEndMonitor();
+	bool monitorMustEnd();
 	void setEndMonitor(bool value);
 
 	double timeInterval(struct timeval start, struct timeval end);
 	double interval_GPU_power(int i);
 	double interval_CPU_power(int i);
 	double interval_CPU_power_est(int i, double prev_power);
-	double timeval2double(timeval &time);
+	double timeval2double(struct timeval time);
 };
