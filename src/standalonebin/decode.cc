@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 		std::cout << "Decoding utterance " << utt << std::endl;
 
 		if (posteriors.NumRows() == 0) {
-			std::cout << "[WARN." << utt << "]: Zero lenght utterance" << std::cout;
+			std::cout << "[WARN." << utt << "]: Zero lenght utterance" << std::endl;
 			num_fail++;
 			continue;
 		}
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
 		decode_timer.Reset();
 		if (!decoder.Decode(&nnet_decodable)) {
-			std::cout << "[WARN." << utt << "]: Failed to decode" << std::cout;
+			std::cout << "[WARN." << utt << "]: Failed to decode" << std::endl;
 			num_fail++;
 			continue;
 		}
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 		decode_elapsed = decode_timer.Elapsed();
 
 		if (!decoder.ReachedFinal()) {
-			std::cout << "[WARN. " << utt << "]: No final state reached" << std::cout;
+			std::cout << "[WARN. " << utt << "]: No final state reached" << std::endl;
 		}
 
 
