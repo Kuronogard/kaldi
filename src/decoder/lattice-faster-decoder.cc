@@ -846,7 +846,7 @@ void LatticeFasterDecoderTpl<FST, Token>::ProcessNonemitting(BaseFloat cutoff) {
   KALDI_ASSERT(queue_.empty());
   for (const Elem *e = toks_.GetList(); e != NULL;  e = e->tail) {
     StateId state = e->key;
-    if (fst_.NumInputEpsilons(state) != 0)
+    if (fst_->NumInputEpsilons(state) != 0)
       queue_.push_back(state);
   }
   if (queue_.empty()) {
@@ -894,7 +894,7 @@ void LatticeFasterDecoderTpl<FST, Token>::ProcessNonemitting(BaseFloat cutoff) {
 
           // "changed" tells us whether the new token has a different
           // cost from before, or is new [if so, add into queue].
-          if (changed && fst_.NumInputEpsilons(arc.nextstate) != 0) 
+          if (changed && fst_->NumInputEpsilons(arc.nextstate) != 0) 
             queue_.push_back(arc.nextstate);
         }
       }

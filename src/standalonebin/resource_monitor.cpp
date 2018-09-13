@@ -77,8 +77,9 @@ void ResourceMonitor::init() {
 
 }
 
-void ResourceMonitor::startMonitoring() {
+void ResourceMonitor::startMonitoring(double seconds) {
 
+	measure_period = seconds * 1000000;
 	setEndMonitor(false);
 	running = true;
 
@@ -259,6 +260,8 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 	cerr << "Inside thread" << endl;
 
 	ResourceMonitor *parent = (ResourceMonitor*)arg;
+	useconds_t wait_time = parent->measure_period;
+
 
 	while(!parent->monitorMustEnd()) {
 		timeval timestamp;
@@ -282,7 +285,7 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 		parent->_energyCPU.push_back(cpuRawEnergy);
 		parent->_powerGPU.push_back(gpuPower.power);
 
-		usleep(0.5*1000000); // 1/2 second
+		usleep(wait_time); // 1/2 second
 	}
 
 	pthread_exit(NULL);

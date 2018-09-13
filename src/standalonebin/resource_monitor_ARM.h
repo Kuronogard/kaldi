@@ -5,17 +5,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "standalonebin/probeCPU.h"
-#include "standalonebin/probeGPU.h"
+#include "standalonebin/probeARM.h"
 
 using namespace std;
 
 
-class ResourceMonitor {
+class ResourceMonitorARM {
 
 public:
-	ResourceMonitor();
-	~ResourceMonitor();
+	ResourceMonitorARM();
+	~ResourceMonitorARM();
 
 	void startMonitoring(double seconds);
 	void endMonitoring();
@@ -31,12 +30,13 @@ public:
 	void getPowerCPU(vector<double> &timestamp, vector<double> &power);
 	void getPowerGPU(vector<double> &timestamp, vector<double> &power);
 	void getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU);
+	bool hasData();
 
 private:
 
-	ProbeCPU probeCPU;
-	ProbeGPU probeGPU;
+	ProbeARM probeARM;
 
+	bool initialized;
 	bool running;
 	pthread_mutex_t lock;
 	bool end_monitoring;
@@ -47,8 +47,9 @@ private:
 	struct timezone _timeZone;
 
 	vector<timeval> _timestamp;
-	vector<rawEnergyCPU_t> _energyCPU;
+	vector<double> _powerCPU;
 	vector<double> _powerGPU;
+
 
 	useconds_t measure_period;
 

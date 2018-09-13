@@ -12,7 +12,7 @@
 #include "base/timer.h"
 #include "nnet3/nnet-am-decodable-simple.h"
 #include "nnet3/nnet-utils.h"
-#include "standalonebin/resource_monitor.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 int main(int argc, char **argv) {
 
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 		std::string profile = "";
 
 		//Timer timer;
-		ResourceMonitor resourceMonitor;
+		ResourceMonitorARM resourceMonitor;
 
 		//bool pad_input = true;
 		//BaseFloat acoustic_scale = 0.1;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 
 			
 			//timer.Reset();
-			resourceMonitor.startMonitoring();
+			resourceMonitor.startMonitoring(0.5);
 			nnet_decodable.ComputeFromModel(decodable_opts, am_nnet, features, 
 								&online_ivectors, online_ivector_period, &compiler);
 			resourceMonitor.endMonitoring();

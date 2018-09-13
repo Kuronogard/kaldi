@@ -8,11 +8,13 @@ include ../kaldi.mk
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
 
+BINFILES = resourceMonitorARMtest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
+#BINFILES = rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
-BINFILES = rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
+OBJFILES = resource_monitor_ARM.o probeARM.o
+#OBJFILES = resource_monitor_ARM.o resource_monitor.o probeARM.o probeCPU.o probeGPU.o
 
-OBJFILES = resource_monitor.o probeCPU.o probeGPU.o
 
 LIBNAME = standalone-utils
 

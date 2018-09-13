@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include "resource_monitor.h"
+#include "resource_monitor_ARM.h"
 
 
 
@@ -11,7 +11,7 @@ using namespace std;
 int main(int argc, char **argv) {
 
 
-	ResourceMonitor monitor;
+	ResourceMonitorARM monitor;
 	monitor.init();
 
 	cerr << "Start monitoring" << endl;

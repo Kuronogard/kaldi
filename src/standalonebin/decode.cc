@@ -13,7 +13,7 @@
 #include "fstext/fstext-lib.h"
 #include "nnet3/nnet-am-decodable-simple.h"
 #include "nnet3/nnet-utils.h"
-#include "standalonebin/resource_monitor.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 
 int main(int argc, char **argv) {
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 	
 
 	Timer decode_timer;
-	ResourceMonitor resourceMonitor;
+	ResourceMonitorARM resourceMonitor;
 
 	std::string am_nnet_filename = po.GetArg(1),
 							decode_graph_filename = po.GetArg(2),
