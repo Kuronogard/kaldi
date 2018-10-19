@@ -7,6 +7,14 @@
 #include <nvml.h>
 
 
+int ResourceMonitor::numData() {
+	return _timestamp.size();
+}
+
+bool ResourceMonitor::hasData() {
+	return _timestamp.size() > 0;
+}
+
 
 double ResourceMonitor::interval_GPU_power(int i) {
 	return (_powerGPU[i] + _powerGPU[i+1]) / 2;

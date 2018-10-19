@@ -35,5 +35,8 @@ ifeq ($(findstring clang,$(COMPILER)),clang)
 CXXFLAGS += -Wno-mismatched-tags
 endif
 
-LDFLAGS = $(EXTRA_LDFLAGS) $(OPENFSTLDFLAGS) $(ATLASLDFLAGS) -rdynamic
-LDLIBS = $(EXTRA_LDLIBS) $(OPENFSTLIBS) $(ATLASLIBS) -lm -lpthread -ldl
+NVIDIA_LDFLAGS = -L/usr/lib/nvidia-375
+NVIDIA_LIBS = -lnvidia-ml
+
+LDFLAGS = $(EXTRA_LDFLAGS) $(OPENFSTLDFLAGS) $(ATLASLDFLAGS) $(NVIDIA_LDFLAGS) -rdynamic
+LDLIBS = $(EXTRA_LDLIBS) $(OPENFSTLIBS) $(ATLASLIBS) $(NVIDIA_LIBS) -lm -lpthread -ldl

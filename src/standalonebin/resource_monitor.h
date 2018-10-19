@@ -32,6 +32,9 @@ public:
 	void getPowerGPU(vector<double> &timestamp, vector<double> &power);
 	void getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU);
 
+	int numData();
+	bool hasData();
+
 private:
 
 	ProbeCPU probeCPU;
