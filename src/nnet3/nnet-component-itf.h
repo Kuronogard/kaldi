@@ -24,6 +24,8 @@
 
 #include <iostream>
 #include <string>
+#include <cfloat>
+#include <cmath>
 #include "nnet3/nnet-common.h"
 #include "nnet3/nnet-parse.h"
 #include "base/kaldi-error.h"
@@ -80,9 +82,10 @@ enum ComponentProperties {
   kUsesMemo = 0x1000,  // true if the component returns a void* pointer from its
                        // Propagate() function that needs to be passed into the
                        // corresponding Backprop function.
-  kRandomComponent = 0x2000   // true if the component has some kind of
+  kRandomComponent = 0x2000,   // true if the component has some kind of
                               // randomness, like DropoutComponent (these should
                               // inherit from class RandomComponent.
+	kQuantizableComponent = 0x4000 // true if the component is quantizable
 };
 
 
@@ -121,6 +124,13 @@ class ComponentStatistics {
 	int32 numWeights;
 	int32 sizeBytes;
 	std::string info;
+//	Vector<int> weight_range;  // 100, 98, 95, 92, 90, 85 % considering a symetric range around '0'
+//	Vector<int> input_range;		// The same as above
+	int num_inputs = 0;
+	BaseFloat w_range_min = 0;
+	BaseFloat w_range_max = 0;
+	BaseFloat in_range_min = 0;
+	BaseFloat in_range_max = 0;
 };
 
 
@@ -418,6 +428,227 @@ class Component {
 
  private:
   KALDI_DISALLOW_COPY_AND_ASSIGN(Component);
+};
+
+
+class QuantParams {
+public:
+
+	BaseFloat old_in_floor;
+	BaseFloat old_in_ceil;
+	BaseFloat old_w_floor;
+	BaseFloat old_w_ceil;
+	BaseFloat new_in_floor;
+	BaseFloat new_in_ceil;
+	BaseFloat new_w_floor;
+	BaseFloat new_w_ceil;
+
+	QuantParams() : 
+			old_in_floor(FLT_MIN),
+			old_in_ceil(FLT_MAX),
+			old_w_floor(FLT_MIN),
+			old_w_ceil(FLT_MAX),
+			new_in_floor(FLT_MIN),
+			new_in_ceil(FLT_MAX),
+			new_w_floor(FLT_MIN),
+			new_w_ceil(FLT_MAX)
+	 {}
+
+	QuantParams(BaseFloat n1, BaseFloat n2, BaseFloat n3, BaseFloat n4, 
+							BaseFloat n5, BaseFloat n6, BaseFloat n7, BaseFloat n8) :
+			old_in_floor(n1),
+			old_in_ceil(n2),
+			old_w_floor(n3),
+			old_w_ceil(n4),
+			new_in_floor(n5),
+			new_in_ceil(n6),
+			new_w_floor(n7),
+			new_w_ceil(n8)
+	 {}
+
+	QuantParams(const QuantParams &other) : 
+			old_in_floor(other.old_in_floor),
+			old_in_ceil(other.old_in_ceil),
+			old_w_floor(other.old_w_floor),
+			old_w_ceil(other.old_w_ceil),
+			new_in_floor(other.new_in_floor),
+			new_in_ceil(other.new_in_ceil),
+			new_w_floor(other.new_w_floor),
+			new_w_ceil(other.new_w_ceil)
+	 {}
+
+	QuantParams& operator=(const QuantParams &other) {
+		this->old_in_floor = other.old_in_floor;
+		this->old_in_ceil = other.old_in_ceil;
+		this->old_w_floor = other.old_w_floor;
+		this->old_w_ceil = other.old_w_ceil;
+		this->new_in_floor = other.new_in_floor;
+		this->new_in_ceil = other.new_in_ceil;
+		this->new_w_floor = other.new_w_floor;
+		this->new_w_ceil = other.new_w_ceil;
+		return *this;
+	}
+};
+
+#define floor_ceil(n, min, max) ((n) > (max))? (max) : ((n) < (min))? (min) : (n)
+
+/*
+ * This abstract class is intended to be included in multiple inheritance with any Component
+ * class. By itself, it does not represent a component
+ */
+class QuantizableSubComponent {
+public:
+	QuantizableSubComponent():
+		params(),
+		quantize(false),
+		quant_correct(false),
+		w_quant_factor(1.0),
+		in_quant_factor(1.0),
+		num_inputs_gathered(0),
+		w_range_min(FLT_MAX),
+		w_range_max(FLT_MIN),
+		in_range_min(FLT_MAX),
+		in_range_max(FLT_MIN)
+	{}
+
+	QuantizableSubComponent(const QuantizableSubComponent &other) :
+		params(other.params),
+		quantize(other.quantize),
+		quant_correct(other.quant_correct),
+		w_quant_factor(other.w_quant_factor),
+		in_quant_factor(other.in_quant_factor),
+		num_inputs_gathered(other.num_inputs_gathered),
+		w_range_min(other.w_range_min),
+		w_range_max(other.w_range_max),
+		in_range_min(other.in_range_min),
+		in_range_max(other.in_range_max) 
+	{}
+
+	void SetQuantizationParams(const QuantParams &quant_params) {
+		params = quant_params;
+		w_quant_factor = (params.old_w_ceil - params.old_w_floor)/(params.new_w_ceil - params.new_w_floor);
+		in_quant_factor = (params.old_in_ceil - params.old_in_floor)/(params.new_in_ceil - params.new_in_floor);
+	}
+	
+	void GetQuantizationStats(ComponentStatistics &stats) {
+		stats.w_range_min = w_range_min;
+		stats.w_range_max = w_range_max;
+		stats.in_range_min = in_range_min;
+		stats.in_range_max = in_range_max;
+		stats.num_inputs = num_inputs_gathered;
+	}
+	
+	void SetQuantize(bool quant) const {
+		quantize = quant;
+	}
+
+	void SetQuantCorrect(bool correct) const {
+		quant_correct = correct;
+	}
+
+	bool QuantCorrect() const { return quant_correct; }
+
+	virtual void QuantizeWeights() = 0;
+
+protected:
+	void QuantizeWeights_(CuMatrixBase<BaseFloat> &weights) {
+		w_range_min = weights.Min();
+		w_range_max = weights.Max();
+
+		if(!quantize) return;
+
+		std::cerr << "Quantize weights" << std::endl;
+
+		//BaseFloat *w_data = weights.Data();
+		for (int r = 0; r < weights.NumRows(); r++) {
+			for (int c = 0; c < weights.NumCols(); c++) {
+				//BaseFloat value = w_data[r][c];
+				BaseFloat value = weights(r, c);
+				value = round(value/w_quant_factor);
+				value = floor_ceil(value, params.new_w_floor, params.new_w_ceil);
+				//w_data[r][c] = value;
+				weights(r, c) = value;
+				KALDI_ASSERT(weights(r,c) >= params.new_w_floor);
+				KALDI_ASSERT(weights(r,c) <= params.new_w_ceil);
+			}
+		}
+/*
+		for (MatrixIndexT r = 0; r < weights.NumRows(); r++) {
+			for (MatrixIndexT c = 0; c < weights.NumCols(); c++) {
+				KALDI_ASSERT(weights(r,c) >= params.new_w_floor);
+				KALDI_ASSERT(weights(r,c) <= params.new_w_ceil);
+			}
+		}
+*/
+	}
+
+	void QuantizeInputs(CuMatrixBase<BaseFloat> &inputs) const {
+		BaseFloat min = inputs.Min();
+		BaseFloat max = inputs.Max();
+		if (min < in_range_min) in_range_min = min;
+		if (max > in_range_max) in_range_max = max;
+		num_inputs_gathered += inputs.NumRows();
+	
+		if(!quantize) return;
+
+		std::cerr << "quantize inputs" << std::endl;
+
+		KALDI_ASSERT(quant_correct);
+
+		std::cerr << "QUANTIZE Inputs" << std::endl;
+
+		//BaseFloat *in_data = inputs.Data();
+		for (int r = 0; r < inputs.NumRows(); r++) {
+			for (int c = 0; c < inputs.NumCols(); c++) {
+				//BaseFloat value = in_data[r][c];
+				BaseFloat value = inputs(r, c);
+				value = round(value/in_quant_factor);
+				value = floor_ceil(value, params.new_in_floor, params.new_in_ceil);
+				//in_data[r][c] = value;
+				inputs(r, c) = value;
+				KALDI_ASSERT(inputs(r,c) >= params.new_in_floor);
+				KALDI_ASSERT(inputs(r,c) <= params.new_in_ceil);	
+			}
+		}
+/*
+		for (MatrixIndexT r = 0; r < inputs.NumRows(); r++) {
+			for (MatrixIndexT c = 0; c < inputs.NumCols(); c++) {
+				KALDI_ASSERT(inputs(r,c) >= params.new_in_floor);
+				KALDI_ASSERT(inputs(r,c) <= params.new_in_ceil);
+			}
+		}
+*/
+	}
+
+	void UnQuantizeWeights_(CuMatrixBase<BaseFloat> &weights) {
+		if(!quantize) return;
+
+		weights.Scale(w_quant_factor);
+	}
+
+	void UnQuantizeInputs(CuMatrixBase<BaseFloat> &inputs) const {
+		if(!quantize) return;
+
+		KALDI_ASSERT(quant_correct);
+
+		inputs.Scale(w_quant_factor * in_quant_factor);
+	}
+
+	bool WeightQuantCorrect() { return quant_correct; }
+
+private:
+		QuantParams params;
+		mutable bool quantize;
+		mutable bool quant_correct;
+		BaseFloat w_quant_factor;
+		BaseFloat in_quant_factor;
+
+		// variables to gather statistics about min and max values (input dynamic range)
+		mutable int num_inputs_gathered;
+		mutable BaseFloat w_range_min;
+		mutable BaseFloat w_range_max;
+		mutable BaseFloat in_range_min;
+		mutable BaseFloat in_range_max;
 };
 
 

@@ -23,6 +23,7 @@
 #include <iomanip>
 #include "nnet3/nnet-component-itf.h"
 #include "nnet3/nnet-simple-component.h"
+#include "nnet3/nnet-simple-quant-component.h"
 #include "nnet3/nnet-normalize-component.h"
 #include "nnet3/nnet-general-component.h"
 #include "nnet3/nnet-convolutional-component.h"
@@ -49,6 +50,7 @@ ComponentPrecomputedIndexes* ComponentPrecomputedIndexes::ReadNew(std::istream &
    KALDI_ERR << "Unknown ComponentPrecomputedIndexes type " << token;
   ans->Read(is, binary);
   return ans;
+
 }
 
 ComponentPrecomputedIndexes* ComponentPrecomputedIndexes::NewComponentPrecomputedIndexesOfType(
@@ -181,7 +183,13 @@ Component* Component::NewComponentOfType(const std::string &component_type) {
     ans = new SumBlockComponent();
   } else if (component_type == "ScaleAndOffsetComponent") {
     ans = new ScaleAndOffsetComponent();
-  }
+  } else if (component_type == "QuantFixedAffineComponent") {
+		ans = new QuantFixedAffineComponent();
+	} else if (component_type == "QuantNaturalGradientAffineComponent") {
+		ans = new QuantNaturalGradientAffineComponent();
+	} else if (component_type == "QuantLinearComponent") {
+		ans = new QuantLinearComponent();
+	}
   if (ans != NULL) {
     KALDI_ASSERT(component_type == ans->Type());
   }

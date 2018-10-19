@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 			tok_elem.token = lat.AddState();
 			tok_elem.state = tokens[i].dst_state;
 
-			cerr << "Added state (" << dstframe << ") " << tok_elem.token << endl;
+			//cerr << "Added state (" << dstframe << ") " << tok_elem.token << endl;
 			token_map[dstframe][tokens[i].dst_state] = tok_elem;
 			added_states++;
 		} else if (token_map[dstframe][tokens[i].dst_state].state != tokens[i].dst_state) {
@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
 	}
 
 	tok_debug.close();
-	cout << "Added " << added_states << " states." << endl;
+	//cout << "Added " << added_states << " states." << endl;
 
 	// for each token
 	//	orig_tok = hash[frame].at(tok.orig_state);
@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
 
 		Arc arc(pdf, tokens[i].wordid, Weight(tokens[i].graph_cost, tokens[i].ac_cost), dst_tok);
 		lat.AddArc(orig_tok, arc);
-		cerr << "Added arc " << orig_tok << " -> " << dst_tok << ", " << pdf << ", " << tokens[i].wordid << ", (" << tokens[i].ac_cost << ", " << tokens[i].graph_cost << ")" << endl;
+		//cerr << "Added arc " << orig_tok << " -> " << dst_tok << ", " << pdf << ", " << tokens[i].wordid << ", (" << tokens[i].ac_cost << ", " << tokens[i].graph_cost << ")" << endl;
 		added_arcs++;
 	}
 	
@@ -314,8 +314,8 @@ int main(int argc, char **argv) {
 	// show inode, onode, graph_cost, ac_cost
 
 
-	cout << "Connect" << endl;
-	cout << "States: " << lat.NumStates() << endl;
+	//cout << "Connect" << endl;
+	//cout << "States: " << lat.NumStates() << endl;
 
 
   bool ans = true;
@@ -334,7 +334,7 @@ int main(int argc, char **argv) {
 	//cout << "Invert" << endl;
 	//cout << "States: " << lat.NumStates() << endl;
 
-	cout << "Top sort" << endl;
+	//cout << "Top sort" << endl;
   if (ifst->Properties(fst::kTopSorted, true) == 0) {
     if (!fst::TopSort(ifst)) {
       // Cannot topologically sort the lattice -- determinization will fail.

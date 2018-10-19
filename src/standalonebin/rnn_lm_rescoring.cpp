@@ -1,6 +1,3 @@
-
-
-
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "fstext/fstext-lib.h"
@@ -11,12 +8,31 @@
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "base/timer.h"
 #include "nnet3/nnet-utils.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor.h"
+
+#define ABS_(a) (((a)>=0)? (a) : -(a))
+#define MAXABS_(a, b)  ((ABS_(a) > ABS_(b))? ABS_(a) : ABS_(b))
+
+using kaldi::nnet3::QuantParams;
+
+QuantParams quant_params[8] = {
+  QuantParams(-0.845536,0.845536, -1.78486,  1.78486, -127, 127, -127, 127),
+  QuantParams(-8.64707, 8.64707,  -1.98485,  1.98485, -127, 127, -127, 127),
+  QuantParams(-1,       1,        -1.02597,  1.02597, -127, 127, -127, 127),
+  QuantParams(-6.24459, 6.24459,  -0.897963, 0.897963,-127, 127, -127, 127),
+  QuantParams(-15.2109, 15.2109,  -2.42414,  2.42414, -127, 127, -127, 127),
+  QuantParams(-1,       1,        -1.39773,  1.39773, -127, 127, -127, 127),
+  QuantParams(-8.27293, 8.27293,  -1.66043,  1.66043, -127, 127, -127, 127),
+  QuantParams(-29.213,  29.213,   -2.90258,  2.90258, -127, 127, -127, 127)
+};
+
+
 
 
 int main(int argc, char **argv) {
 
 	using namespace kaldi;
+	using namespace kaldi::nnet3;
 	typedef kaldi::int32 int32;
 	typedef kaldi::int64 int64;
 	using fst::VectorFst;
@@ -44,10 +60,13 @@ int main(int argc, char **argv) {
 	int32 max_ngram_order = 3;
 	std::string symbol_table = "";
 	std::string time_log = "";
+	std::string quant_log = "";
 	std::string use_gpu = "yes";
 	std::string profile = "";
 	double measure_period = 0.1;
 	double rnnlm_measure_period = 0.001;
+	bool quantize = false;
+
 	int32 num_states_cache = 50000;
 
 	
@@ -59,10 +78,13 @@ int main(int argc, char **argv) {
 	po.Register("word-ins-penalty", &word_ins_penalty, "Word Insertion Penalty. This value is added to the graph weight of every arc in the lattice acceptor with a word label (those with no empty labels)");
 	po.Register("symbol-table", &symbol_table, "Symbol table. if provided, the transcriptions will be shown on standart output");
 	po.Register("time-log", &time_log, "File to store time measurements");
+	po.Register("quant-range-log", &quant_log, "File to write input min and max values");
 	po.Register("num-states-cache", &num_states_cache, "Number of states cached when mapping LM FST to lattice type. Consumes more memory but it is faster. (I don't know if it affects accuracy)");
 	po.Register("profile", &profile, "File to store profile info: power, energy and execution time.");
 	po.Register("measure-period", &measure_period, "Time between energy measurements");
 	po.Register("rnnlm-measure-period", &rnnlm_measure_period, "Time between energy measurements for internal rnn evaluations");
+	po.Register("quantize", &quantize, "Quantize network");
+
 	opts.Register(&po);
 
 	po.Read(argc, argv);
@@ -87,8 +109,18 @@ int main(int argc, char **argv) {
 
 
 	//Timer rescore_timer;
-	ResourceMonitorARM resourceMonitor;
+	ResourceMonitor resourceMonitor;
 	resourceMonitor.init();
+
+	std::ofstream quant_o;
+	if (quant_log != "") {
+		quant_o.open(quant_log);
+		if (!quant_o.is_open()) {
+			KALDI_ERR << "Could not open quant ranges log file " << quant_log;
+		}
+		quant_o << "component, in min value, in max value, w min value, w max value, num inputs" << std::endl;
+	}
+
 
   // read old WFST LM (ARPA)
 	VectorFst<StdArc> *std_old_LM;
@@ -123,6 +155,25 @@ int main(int argc, char **argv) {
 	ReadKaldiObject(rnnlm_filename, &rnnlm);
 
 	KALDI_ASSERT(IsSimpleNnet(rnnlm));
+
+	int quantized_layers = 0;
+	if (quant_o.is_open() || quantize) {
+		for (int i = 0; i < rnnlm.NumComponents(); i++) {
+			Component *comp = rnnlm.GetComponent(i);
+			if (comp->Properties() & kaldi::nnet3::ComponentProperties::kQuantizableComponent) {
+				std::cerr << "Quantize weights of layers " << quantized_layers << std::endl;
+				if (quantized_layers >= 8) {
+					std::cerr << "Stopper quantization at layer 8" << std::endl;
+					break;
+				}
+				QuantizableSubComponent *qComp = dynamic_cast<QuantizableSubComponent*>(comp);
+				qComp->SetQuantizationParams(quant_params[quantized_layers]);
+				qComp->SetQuantize(quantize);
+				qComp->QuantizeWeights();
+				quantized_layers++;
+			}
+		}
+	}
 
 	CuMatrix<BaseFloat> word_embedding_mat;
 	ReadKaldiObject(word_embedding_filename, &word_embedding_mat);
@@ -170,194 +221,230 @@ int main(int argc, char **argv) {
 		measure_period = 0;
 	}
 
-	int32 num_success = 0, num_fail = 0;
-	for(; !lattice_reader.Done(); lattice_reader.Next()) {
-		std::string utt = lattice_reader.Key();
-		Lattice lat = lattice_reader.Value();
-		lattice_reader.FreeCurrent();
+
+	try {
+
+		int32 num_success = 0, num_fail = 0;
+		for(; !lattice_reader.Done(); lattice_reader.Next()) {
+			std::string utt = lattice_reader.Key();
+			Lattice lat = lattice_reader.Value();
+			lattice_reader.FreeCurrent();
 		
-		std::cout << "Starting LM rescore for " << utt << std::endl;
+			std::cout << "Starting LM rescore for " << utt << std::endl;
 
-		//rescore_timer.Reset();		
-		resourceMonitor.startMonitoring(measure_period);
+			//rescore_timer.Reset();		
+			resourceMonitor.startMonitoring(measure_period);
 
-		// ---------------------------------------------------
-		//		Remove old LM weights
-		// ---------------------------------------------------
-		// Escalar lattice -1/lm_scale y ordenar por oLabel
-		// componer con oldLM
-		// Invertir lattice
-		// Determinizar lattice
-		// Escalar lattice -1
-
-
-		std::cout << "Remove old weights" << std::endl;
-
-		fst::ScaleLattice(fst::GraphLatticeScale(-1.0/rescore_lm_scale), &lat);
-
-		//KALDI_WARN << "old_LM arcs " << old_LM.NumArcs(1);
-		//KALDI_WARN << "qewdqwe";
-
-		ArcSort(&lat, fst::OLabelCompare<LatticeArc>());
+			// ---------------------------------------------------
+			//		Remove old LM weights
+			// ---------------------------------------------------
+			// Escalar lattice -1/lm_scale y ordenar por oLabel
+			// componer con oldLM
+			// Invertir lattice
+			// Determinizar lattice
+			// Escalar lattice -1
 
 
-		Lattice lat_nolm;
-		//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
-		Compose(lat, old_LM, &lat_nolm);
-		if ( lat_nolm.Start() == fst::kNoStateId ) {
-			resourceMonitor.endMonitoring();
-			std::cout << "[WARN." << utt << "] unscored lattice empty." << std::endl;
-      num_fail++;
-			continue;
-		}
+			std::cout << "Remove old weights" << std::endl;
+
+			fst::ScaleLattice(fst::GraphLatticeScale(-1.0/rescore_lm_scale), &lat);
+
+			//KALDI_WARN << "old_LM arcs " << old_LM.NumArcs(1);
+			//KALDI_WARN << "qewdqwe";
+
+			ArcSort(&lat, fst::OLabelCompare<LatticeArc>());
 
 
+			Lattice lat_nolm;
+			//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
+			Compose(lat, old_LM, &lat_nolm);
+			if ( lat_nolm.Start() == fst::kNoStateId ) {
+				resourceMonitor.endMonitoring();
+				std::cout << "[WARN." << utt << "] unscored lattice empty." << std::endl;
+				num_fail++;
+				continue;
+			}	
 
-		Invert(&lat_nolm);
-
-
-		CompactLattice clat_nolm_determinized;
-		DeterminizeLattice(lat_nolm, &clat_nolm_determinized);
-
-
-		fst::ScaleLattice(fst::GraphLatticeScale(-1), &clat_nolm_determinized);
-
-
-		// ---------------------------------------------------
-		//		Add new LM weights	
-		// ---------------------------------------------------
-		// componer con newLM
-		// Invertir lattice
-		// Determinizar lattice
-		// Escalar por lm_scale
-
-		std::cerr << "Add new weights" << std::endl;
-
-		ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
-		rnnlm::KaldiRnnlmDeterministicFst new_LM_wrapped(max_ngram_order, info, rnnlm_measure_period);
-
-		std::cerr << "Compose with LM" << std::endl;
-		CompactLattice clat_rescored;
-		ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
-		if (clat_rescored.Start() == fst::kNoStateId) {
-			resourceMonitor.endMonitoring();
-			std::cout << "[WARN." << utt << "] Rescored lattice is empty." << std::endl;
-			num_fail++;
-			continue;
-		}
+			Invert(&lat_nolm);
 
 
-		std::cerr << "Convert to normal lattice and invert" << std::endl;
-		Lattice lat_rescored;
-		ConvertLattice(clat_rescored, &lat_rescored);
-		Invert(&lat_rescored);
-
-		std::cerr << "Determinize lattice" << std::endl;
-		CompactLattice clat_rescored_determinized;
-		DeterminizeLattice(lat_rescored, &clat_rescored_determinized);
+			CompactLattice clat_nolm_determinized;
+			DeterminizeLattice(lat_nolm, &clat_nolm_determinized);
 
 
-		std::cerr << "Scale lattice" << std::endl;
-		fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
-
-		//double rescore_elapsed = rescore_timer.Elapsed();
-		resourceMonitor.endMonitoring();
-
-		// ---------------------------------------------------
-		//		Compute Best Path
-		// ---------------------------------------------------
-		// Escalar (lattice-scale --inv-acoustic-scale=7..17)
-		// Sumar penalty (lattice-add-penalty --word-ins-penalty=0.0, 0.5, 1.0)
-		// Calcular best path (lattice-best-path)
-	
-		std::cout << "Compute best path" << std::endl;
-
-		std::vector<std::vector<double> > scale(2);
-		scale[0].resize(2);
-		scale[1].resize(2);
-		scale[0][0] = lm_scale;
-		scale[0][1] = acoustic2lm_scale;
-		scale[1][0] = lm2acoustic_scale;
-		scale[1][1] = acoustic_scale;
-
-		ScaleLattice(scale, &clat_rescored_determinized);
-		AddWordInsPenToCompactLattice(word_ins_penalty, &clat_rescored_determinized);
-
-	
-		CompactLattice clat_best_path;
-		CompactLatticeShortestPath(clat_rescored_determinized, &clat_best_path);
+			fst::ScaleLattice(fst::GraphLatticeScale(-1), &clat_nolm_determinized);
 
 
-		// ---------------------------------------------------
-		//		Save Symbol Sequences
-		// ---------------------------------------------------
+			// ---------------------------------------------------
+			//		Add new LM weights	
+			// ---------------------------------------------------
+			// componer con newLM
+			// Invertir lattice
+			// Determinizar lattice
+			// Escalar por lm_scale
 
-		std::cout << "Store symbol sequences" << std::endl;
+			std::cerr << "Add new weights" << std::endl;
 
-		Lattice lat_best_path;
-		ConvertLattice(clat_best_path, &lat_best_path);
+			ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
+			rnnlm::KaldiRnnlmDeterministicFst new_LM_wrapped(max_ngram_order, info, rnnlm_measure_period);
 
-		std::vector<int32> phones;
-		std::vector<int32> words;
-		LatticeWeight weight;
-		GetLinearSymbolSequence(lat_best_path, &phones, &words, &weight);		
-
-
-		if (words.size() == 0) {
-			std::cout << "[WARN." << utt << "] Transcription is empty." << std::endl;
-			num_fail++;
-			continue;
-		}
-
-		num_success++;		
-
-		// write symbols
-		trans_writer.Write(utt, words);
-
-
-		// write elapsed
-		if ( time_o.is_open() ) {
-			double rescore_elapsed = resourceMonitor.getTotalExecTime();
-			time_o << utt << ", " << rescore_elapsed;
-			time_o << std::endl;
-		}
-
-		if (profile_o.is_open()) {
-			double elapsed = resourceMonitor.getTotalExecTime();
-			double cpuPower = resourceMonitor.getAveragePowerCPU();
-			double gpuPower = resourceMonitor.getAveragePowerGPU();
-			double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
-			double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
-			int numValues = resourceMonitor.numData();
-
-			double rnnlm_time, rnnlm_energy;
-			int rnnlm_num_execs;
-
-			new_LM_wrapped.GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
-
-			if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
-
-			profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
-			profile_o << ", " << gpuEnergy << ", " << numValues;
-			profile_o << ", " << rnnlm_time << ", " << rnnlm_energy << ", " << rnnlm_num_execs << endl;
-		}
-
-
-		// If no word_symbol available, skip this part
-		if ( word_symbols != 0 ) {
-			std::cout << "  " << utt << ": ";
-			for (size_t i = 0; i < words.size(); i++) {
-				std::string s = word_symbols->Find(words[i]);
-				if (s == "") s = "<ERR>";
-				std::cout << s << ' ';
+			std::cerr << "Compose with LM" << std::endl;
+			CompactLattice clat_rescored;
+			ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
+			if (clat_rescored.Start() == fst::kNoStateId) {
+				resourceMonitor.endMonitoring();
+				std::cout << "[WARN." << utt << "] Rescored lattice is empty." << std::endl;
+				num_fail++;
+				continue;
 			}
-			std::cout << std::endl;
-		}
 
+
+			std::cerr << "Convert to normal lattice and invert" << std::endl;
+			Lattice lat_rescored;
+			ConvertLattice(clat_rescored, &lat_rescored);
+			Invert(&lat_rescored);
+
+			std::cerr << "Determinize lattice" << std::endl;
+			CompactLattice clat_rescored_determinized;
+			DeterminizeLattice(lat_rescored, &clat_rescored_determinized);
+
+
+			std::cerr << "Scale lattice" << std::endl;
+			fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
+
+			//double rescore_elapsed = rescore_timer.Elapsed();
+			resourceMonitor.endMonitoring();
+
+			// ---------------------------------------------------
+			//		Compute Best Path
+			// ---------------------------------------------------
+			// Escalar (lattice-scale --inv-acoustic-scale=7..17)
+			// Sumar penalty (lattice-add-penalty --word-ins-penalty=0.0, 0.5, 1.0)
+			// Calcular best path (lattice-best-path)
+	
+			std::cout << "Compute best path" << std::endl;
+
+			std::vector<std::vector<double> > scale(2);
+			scale[0].resize(2);
+			scale[1].resize(2);
+			scale[0][0] = lm_scale;
+			scale[0][1] = acoustic2lm_scale;
+			scale[1][0] = lm2acoustic_scale;
+			scale[1][1] = acoustic_scale;
+
+			ScaleLattice(scale, &clat_rescored_determinized);
+			AddWordInsPenToCompactLattice(word_ins_penalty, &clat_rescored_determinized);
+
+	
+			CompactLattice clat_best_path;
+			CompactLatticeShortestPath(clat_rescored_determinized, &clat_best_path);
+
+
+			// ---------------------------------------------------
+			//		Save Symbol Sequences
+			// ---------------------------------------------------
+
+			std::cout << "Store symbol sequences" << std::endl;
+
+			Lattice lat_best_path;
+			ConvertLattice(clat_best_path, &lat_best_path);
+
+			std::vector<int32> phones;
+			std::vector<int32> words;
+			LatticeWeight weight;
+			GetLinearSymbolSequence(lat_best_path, &phones, &words, &weight);		
+
+
+			if (words.size() == 0) {
+				std::cout << "[WARN." << utt << "] Transcription is empty." << std::endl;
+				num_fail++;
+				continue;
+			}
+
+			num_success++;		
+
+			// write symbols
+			trans_writer.Write(utt, words);
+			std::cerr << "Done " << num_success+num_fail << " uterrances."; 
+			std::cerr << "(success:" << num_success << ", fail:" << num_fail << ")" << std::endl;
+
+			// write elapsed
+			if ( time_o.is_open() ) {
+				double rescore_elapsed = resourceMonitor.getTotalExecTime();
+				time_o << utt << ", " << rescore_elapsed;
+				time_o << std::endl;
+			}
+
+			if (profile_o.is_open()) {
+				double elapsed = resourceMonitor.getTotalExecTime();
+				double cpuPower = resourceMonitor.getAveragePowerCPU();
+				double gpuPower = resourceMonitor.getAveragePowerGPU();
+				double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+				double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+				int numValues = resourceMonitor.numData();
+
+				double rnnlm_time, rnnlm_energy;
+				int rnnlm_num_execs;
+
+				new_LM_wrapped.GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
+
+				if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
+
+				profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
+				profile_o << ", " << gpuEnergy << ", " << numValues;
+				profile_o << ", " << rnnlm_time << ", " << rnnlm_energy << ", " << rnnlm_num_execs << endl;
+			}
+
+
+			// If no word_symbol available, skip this part
+			if ( word_symbols != 0 ) {
+				std::cout << "  " << utt << ": ";
+				for (size_t i = 0; i < words.size(); i++) {
+					std::string s = word_symbols->Find(words[i]);
+					if (s == "") s = "<ERR>";
+					std::cout << s << ' ';
+				}
+			}
+
+		} // End of the lattice for loop
+
+	} catch (std::exception &e) {
+		std::cerr << "Exception: " << e.what() << std::endl;
+	} catch (...) {
+    std::cerr << "Interrupted by non-std exception" << std::endl;
+	}
+
+	if (quant_o.is_open()) {
+		for (int i = 0; i < rnnlm.NumComponents(); i++) {
+			Component *comp = rnnlm.GetComponent(i);
+			ComponentStatistics stats;
+			comp->GetStatistics(stats);
+
+			quant_o << comp->Type() << ", " << stats.in_range_min << ", " << stats.in_range_max;
+			quant_o << ", " << stats.w_range_min << ", " << stats.w_range_max;
+			quant_o << ", " << stats.num_inputs << std::endl;
+		}
+	}
+
+	if (quant_o.is_open()) {
+		quant_o << std::endl << std::endl;
+		for (int i = 0; i < rnnlm.NumComponents(); i++) {
+			Component *comp = rnnlm.GetComponent(i);
+			ComponentStatistics stats;
+			comp->GetStatistics(stats);
+			BaseFloat in = MAXABS_(stats.in_range_min, stats.in_range_max);
+			BaseFloat w = MAXABS_(stats.w_range_min, stats.w_range_max);
+
+			quant_o << comp->Type() << ", " << -in << ", " << in;
+			quant_o << ", " << -w << ", " << w;
+			quant_o << ", " << stats.num_inputs << std::endl;
+		}
 	}
 
 	delete word_symbols;
-	time_o.close();
+	if (time_o.is_open()) time_o.close();
+  if (quant_o.is_open()) quant_o.close();
+  if (profile_o.is_open()) profile_o.close();
 
 	return 0;
 }

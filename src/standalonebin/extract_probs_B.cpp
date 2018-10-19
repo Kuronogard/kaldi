@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 
 		int32 online_ivector_period = 10;
 		std::string use_gpu = "yes";
+		std::string quant_range_log = "";
 		std::string time_log = "";
 		std::string energy_log = "";
 		std::string profile = "";
@@ -42,6 +43,7 @@ int main(int argc, char **argv) {
 		//BaseFloat acoustic_scale = 0.1;
 
 		po.Register("use-gpu", &use_gpu, "Use GPU when possible (yes|no) (default:yes).");
+		po.Register("quant-range-log", &quant_range_log, "File to store max and min input for each nnet component");
 		po.Register("time-log", &time_log, "File to store time logs.");
 		po.Register("energy-log", &energy_log, "File to store snergy logs.");
 		po.Register("profile", &profile, "File to store profile information, such as execution time and energy consumption. This file contains a sumary of all the different logs.");
@@ -58,6 +60,16 @@ int main(int argc, char **argv) {
 								features_rspecifier = po.GetArg(2),
 								ac_model_filename = po.GetArg(3),
 								posterior_wspecifier = po.GetArg(4);	
+
+		std::ofstream quant_range_o;
+		if (quant_range_log != "") {
+			quant_range_o.open(quant_range_log);
+			if (!quant_range_o.is_open()) {
+				KALDI_ERR << "Could not open quant range log file " << quant_range_log;
+			}
+				quant_range_o << "layer, min value, max value" << std::endl;
+		}
+
 
 
 		
@@ -172,9 +184,25 @@ int main(int argc, char **argv) {
 			utt_count++;
 
 		}
+
+		if (quant_range_o.is_open()) {
+			// extract am_nnet dynamic range values
+			kaldi::nnet3::Nnet nnet = am_nnet.GetNnet();
+			for (int i = 0; i < nnet.NumComponents(); i++) {
+				Component* comp = nnet.GetComponent(i);
+				ComponentStatistics stats;
+				comp->GetStatistics(stats);
+				quant_range_o << comp->Type() << ", " << stats.in_range_max;
+				quant_range_o << ", " << stats.in_range_max << std::endl;
+			}
+		}
+
+
 		std::cout << "Finished computing posterior probabilities." << std::endl;
 		std::cout << "Total frames is " << frame_count << " for " << utt_count << " utterances." << std::endl;
 
+
+		if (quant_range_o.is_open()) quant_range_o.close();
 		if (time_o.is_open()) time_o.close();
 		if (energy_o.is_open()) energy_o.close();
 		if (profile_o.is_open()) profile_o.close();
