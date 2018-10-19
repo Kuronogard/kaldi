@@ -29,6 +29,7 @@
 #include "fstext/deterministic-fst.h"
 #include "rnnlm/rnnlm-compute-state.h"
 #include "util/common-utils.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 namespace kaldi {
 namespace rnnlm {
@@ -42,8 +43,10 @@ class KaldiRnnlmDeterministicFst
 
   // Does not take ownership.
   KaldiRnnlmDeterministicFst(int32 max_ngram_order,
-      const RnnlmComputeStateInfo &info);
+      const RnnlmComputeStateInfo &info, double measure_period = 0.1);
   ~KaldiRnnlmDeterministicFst();
+
+	void GetStatistics(double &execTime, double &energy, int &num_executions);
 
   void Clear();
 
@@ -73,6 +76,13 @@ class KaldiRnnlmDeterministicFst
   // Mapping from state-id to RNNLM states.
   // The pointers are owned in this class
   std::vector<RnnlmComputeState*> state_to_rnnlm_state_;
+
+	ResourceMonitorARM resourceMonitor;
+
+	double accum_exec_time_;
+	double accum_energy_;
+	double measure_period_;
+	int num_network_executions_;
 
 };
 

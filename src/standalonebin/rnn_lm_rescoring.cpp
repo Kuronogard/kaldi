@@ -11,7 +11,7 @@
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "base/timer.h"
 #include "nnet3/nnet-utils.h"
-
+#include "standalonebin/resource_monitor_ARM.h"
 
 
 int main(int argc, char **argv) {
@@ -45,7 +45,9 @@ int main(int argc, char **argv) {
 	std::string symbol_table = "";
 	std::string time_log = "";
 	std::string use_gpu = "yes";
-
+	std::string profile = "";
+	double measure_period = 0.1;
+	double rnnlm_measure_period = 0.001;
 	int32 num_states_cache = 50000;
 
 	
@@ -58,6 +60,9 @@ int main(int argc, char **argv) {
 	po.Register("symbol-table", &symbol_table, "Symbol table. if provided, the transcriptions will be shown on standart output");
 	po.Register("time-log", &time_log, "File to store time measurements");
 	po.Register("num-states-cache", &num_states_cache, "Number of states cached when mapping LM FST to lattice type. Consumes more memory but it is faster. (I don't know if it affects accuracy)");
+	po.Register("profile", &profile, "File to store profile info: power, energy and execution time.");
+	po.Register("measure-period", &measure_period, "Time between energy measurements");
+	po.Register("rnnlm-measure-period", &rnnlm_measure_period, "Time between energy measurements for internal rnn evaluations");
 	opts.Register(&po);
 
 	po.Read(argc, argv);
@@ -81,8 +86,9 @@ int main(int argc, char **argv) {
 
 
 
-	Timer rescore_timer;
-	
+	//Timer rescore_timer;
+	ResourceMonitorARM resourceMonitor;
+	resourceMonitor.init();
 
   // read old WFST LM (ARPA)
 	VectorFst<StdArc> *std_old_LM;
@@ -148,6 +154,21 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	std::ofstream profile_o;
+	if ( profile != "" ) {
+		profile_o.open(profile);
+		if ( !profile_o.is_open() ) {
+			KALDI_WARN << "Could not open profile log file" << profile;
+			measure_period = 0;
+		}
+		else {
+			profile_o << "Utterance, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J), energy GPU (J)";	
+			profile_o << ", num values, rnnlm time, rnnlm energy, rnnlm num execs" << std::endl;
+		}
+	}
+	else {
+		measure_period = 0;
+	}
 
 	int32 num_success = 0, num_fail = 0;
 	for(; !lattice_reader.Done(); lattice_reader.Next()) {
@@ -157,7 +178,8 @@ int main(int argc, char **argv) {
 		
 		std::cout << "Starting LM rescore for " << utt << std::endl;
 
-		rescore_timer.Reset();		
+		//rescore_timer.Reset();		
+		resourceMonitor.startMonitoring(measure_period);
 
 		// ---------------------------------------------------
 		//		Remove old LM weights
@@ -183,6 +205,7 @@ int main(int argc, char **argv) {
 		//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
 		Compose(lat, old_LM, &lat_nolm);
 		if ( lat_nolm.Start() == fst::kNoStateId ) {
+			resourceMonitor.endMonitoring();
 			std::cout << "[WARN." << utt << "] unscored lattice empty." << std::endl;
       num_fail++;
 			continue;
@@ -211,12 +234,13 @@ int main(int argc, char **argv) {
 		std::cerr << "Add new weights" << std::endl;
 
 		ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
-		rnnlm::KaldiRnnlmDeterministicFst new_LM_wrapped(max_ngram_order, info);
+		rnnlm::KaldiRnnlmDeterministicFst new_LM_wrapped(max_ngram_order, info, rnnlm_measure_period);
 
 		std::cerr << "Compose with LM" << std::endl;
 		CompactLattice clat_rescored;
 		ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
 		if (clat_rescored.Start() == fst::kNoStateId) {
+			resourceMonitor.endMonitoring();
 			std::cout << "[WARN." << utt << "] Rescored lattice is empty." << std::endl;
 			num_fail++;
 			continue;
@@ -236,7 +260,8 @@ int main(int argc, char **argv) {
 		std::cerr << "Scale lattice" << std::endl;
 		fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
 
-		double rescore_elapsed = rescore_timer.Elapsed();
+		//double rescore_elapsed = rescore_timer.Elapsed();
+		resourceMonitor.endMonitoring();
 
 		// ---------------------------------------------------
 		//		Compute Best Path
@@ -292,9 +317,31 @@ int main(int argc, char **argv) {
 
 		// write elapsed
 		if ( time_o.is_open() ) {
+			double rescore_elapsed = resourceMonitor.getTotalExecTime();
 			time_o << utt << ", " << rescore_elapsed;
 			time_o << std::endl;
 		}
+
+		if (profile_o.is_open()) {
+			double elapsed = resourceMonitor.getTotalExecTime();
+			double cpuPower = resourceMonitor.getAveragePowerCPU();
+			double gpuPower = resourceMonitor.getAveragePowerGPU();
+			double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+			double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+			int numValues = resourceMonitor.numData();
+
+			double rnnlm_time, rnnlm_energy;
+			int rnnlm_num_execs;
+
+			new_LM_wrapped.GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
+
+			if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
+
+			profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
+			profile_o << ", " << gpuEnergy << ", " << numValues;
+			profile_o << ", " << rnnlm_time << ", " << rnnlm_energy << ", " << rnnlm_num_execs << endl;
+		}
+
 
 		// If no word_symbol available, skip this part
 		if ( word_symbols != 0 ) {

@@ -44,7 +44,11 @@ void KaldiRnnlmDeterministicFst::Clear() {
   int32 size = state_to_rnnlm_state_.size();
   for (int32 i = 1; i < size; i++)
     delete state_to_rnnlm_state_[i];
-  
+
+	accum_exec_time_ = 0;
+	accum_energy_ = 0;
+	num_network_executions_ = 0;  
+
   state_to_rnnlm_state_.resize(1);
   state_to_wseq_.resize(1);
   wseq_to_state_.clear();
@@ -52,7 +56,7 @@ void KaldiRnnlmDeterministicFst::Clear() {
 }
 
 KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
-    const RnnlmComputeStateInfo &info) {
+    const RnnlmComputeStateInfo &info, double measure_period) : resourceMonitor() {
   max_ngram_order_ = max_ngram_order;
   bos_index_ = info.opts.bos_index;
   eos_index_ = info.opts.eos_index;
@@ -64,8 +68,24 @@ KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
   wseq_to_state_[bos_seq] = 0;
   start_state_ = 0;
 
+	accum_exec_time_ = 0;
+	accum_energy_ = 0;
+	num_network_executions_ = 0;
+	measure_period_ = measure_period;
+
   state_to_rnnlm_state_.push_back(decodable_rnnlm);
+
+	if (measure_period_ > 0) {
+		resourceMonitor.init();
+	}
 }
+
+void KaldiRnnlmDeterministicFst::GetStatistics(double &execTime, double &energy, int &num_executions) {
+	execTime = accum_exec_time_;
+	energy = accum_energy_;
+	num_executions = num_network_executions_;
+}
+
 
 fst::StdArc::Weight KaldiRnnlmDeterministicFst::Final(StateId s) {
   /// At this point, we have created the state.
@@ -103,10 +123,30 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
 
   // If the pair was just inserted, then also add it to state_to_* structures.
   if (result.second == true) {
-    RnnlmComputeState *rnnlm2 = rnnlm->GetSuccessorState(ilabel);
+		RnnlmComputeState *rnnlm2;
+		
+		if (measure_period_ > 0) {
+			// Measure execution time
+			// rnn executions + 1
+			resourceMonitor.startMonitoring(measure_period_);
+			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
+			resourceMonitor.endMonitoring();
+
+			if (resourceMonitor.numData() < 50) {
+				cerr << "WARN: less than 50 measures inside rnnlm (" << resourceMonitor.numData() << ")" << endl;
+			}
+
+			accum_exec_time_ += resourceMonitor.getTotalExecTime();
+			accum_energy_ += resourceMonitor.getTotalEnergyCPU();
+		} else {
+			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
+		}
+
     state_to_wseq_.push_back(word_seq);
     state_to_rnnlm_state_.push_back(rnnlm2);
-  }
+
+		num_network_executions_++;
+	}
 
   // Creates the arc.
   oarc->ilabel = ilabel;
