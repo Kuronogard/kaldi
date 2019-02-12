@@ -232,6 +232,28 @@ struct OnlineIvectorExtractorAdaptationState {
 };
 
 
+class IvectorStatistics {
+  public:
+    double update_time;
+		double ubm_time;
+		double acstats;
+		IvectorEstimationStatsStatistics ivecEstimationStats;
+
+  IvectorStatistics() :
+    update_time(0.0),
+		ubm_time(0.0),
+		acstats(0.0),
+		ivecEstimationStats() {}
+
+  IvectorStatistics& operator=(IvectorStatistics& other) {
+    update_time = other.update_time;
+		ubm_time = other.ubm_time;
+		acstats = other.acstats;
+		ivecEstimationStats = other.ivecEstimationStats;
+    return *this;
+  }
+};
+
 
 
 /// OnlineIvectorFeature is an online feature-extraction class that's responsible
@@ -259,6 +281,15 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
   //     std::vector<BaseFloat> frame_weights,
   //OnlineFeatureInterface *base_feature);
 
+	void ResetAccStatistics() {
+		ivector_stats_.ResetStatistics();
+	}
+
+  void GetStatistics(IvectorStatistics &stats) {
+//		IvectorEstimationStatsStatistics ivecStats;
+//		ivector_stats_.GetStatistics(statistics_.ivecEstimationStats);	
+		stats = statistics_;
+	}
 
   // Member functions from OnlineFeatureInterface:
 
@@ -311,6 +342,8 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
       const std::vector<std::pair<int32, BaseFloat> > &delta_weights);
 
  private:
+  IvectorStatistics statistics_;
+
   // this function adds "weight" to the stats for frame "frame".
   void UpdateStatsForFrame(int32 frame,
                            BaseFloat weight);

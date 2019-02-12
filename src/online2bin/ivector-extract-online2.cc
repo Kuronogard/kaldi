@@ -104,7 +104,9 @@ int main(int argc, char *argv[]) {
     
 
 		time_o << "Utterance, Frames, Time (s)" << std::endl;
-    
+  
+		Timer timer_1, timer_2;
+  
     for (; !spk2utt_reader.Done(); spk2utt_reader.Next()) {
       std::string spk = spk2utt_reader.Key();
       const std::vector<std::string> &uttlist = spk2utt_reader.Value();
@@ -124,7 +126,7 @@ int main(int argc, char *argv[]) {
 				feat_timer.Reset();
 
         OnlineIvectorFeature ivector_feature(ivector_info,
-                                             &matrix_feature);
+                                            &matrix_feature);
         
         ivector_feature.SetAdaptationState(adaptation_state);
 
@@ -160,14 +162,22 @@ int main(int argc, char *argv[]) {
         Matrix<BaseFloat> ivectors(num_ivectors,
                                    ivector_feature.Dim());
         
+				timer_1.Reset();
         for (int32 i = 0; i < num_ivectors; i++) {
           int32 t = i * n;
           SubVector<BaseFloat> ivector(ivectors, i);
           ivector_feature.GetFrame(t, &ivector);
         }
-
+				double elapsed_1 = timer_1.Elapsed();
 				double elapsed = feat_timer.Elapsed();
-				time_o << utt << ", " << feats.NumRows() << ", " << elapsed << std::endl;
+
+				IvectorStatistics stats;
+				ivector_feature.GetStatistics(stats);
+
+				time_o << utt << ", " << feats.NumRows() << ", " << elapsed << ", " << elapsed_1;
+				time_o << ", " << num_ivectors << ", " << stats.update_time << ", " << stats.ubm_time;
+				time_o << ", " << stats.acstats << ", " << stats.ivecEstimationStats.accStatsTime;
+				time_o << std::endl;
         // Update diagnostics.
 
         tot_ubm_loglike += T * ivector_feature.UbmLogLikePerFrame();

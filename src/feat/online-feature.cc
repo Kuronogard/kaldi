@@ -428,6 +428,9 @@ void OnlineTransform::GetFrame(int32 frame, VectorBase<BaseFloat> *feat) {
   src_->GetFrame(frame, &input_feat);
   feat->CopyFromVec(offset_);
   feat->AddMatVec(1.0, linear_term_, kNoTrans, input_feat, 1.0);
+
+	std::cerr << "lda_mat r:" << linear_term_.NumRows() << "c: " << linear_term_.NumCols();
+	std::cerr << "input_feat :" << input_feat.Dim() << std::endl;
 }
 
 

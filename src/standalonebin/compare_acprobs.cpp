@@ -73,7 +73,9 @@ int main(int argc, char **argv) {
 					BaseFloat weight;
 					acf.read((char*)&weight, sizeof(BaseFloat));	
 					comp_mat(i, j) = weight;
+                    std::cout << weight;
 				}
+                std::cout << std::endl;
 			}
 			acf.close();
 		}	

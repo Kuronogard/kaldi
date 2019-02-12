@@ -1,4 +1,4 @@
-#include "resource_monitor.h"
+#include "resource_monitor_intel.h"
 
 #include <sys/time.h>
 #include <iostream>
@@ -7,21 +7,21 @@
 #include <nvml.h>
 
 
-int ResourceMonitor::numData() {
+int ResourceMonitorIntel::numData() {
 	return _timestamp.size();
 }
 
-bool ResourceMonitor::hasData() {
+bool ResourceMonitorIntel::hasData() {
 	return _timestamp.size() > 0;
 }
 
 
-double ResourceMonitor::interval_GPU_power(int i) {
+double ResourceMonitorIntel::interval_GPU_power(int i) {
 	return (_powerGPU[i] + _powerGPU[i+1]) / 2;
 }
 
 
-double ResourceMonitor::interval_CPU_power(int i) {
+double ResourceMonitorIntel::interval_CPU_power(int i) {
 	double time = timeInterval(_timestamp[i], _timestamp[i+1]);
 	double energy;
 
@@ -43,7 +43,7 @@ double ResourceMonitor::interval_CPU_power(int i) {
 	return energy/time;
 }
 
-double ResourceMonitor::interval_CPU_power_est(int i, double prev_power) {
+double ResourceMonitorIntel::interval_CPU_power_est(int i, double prev_power) {
 	double power;
 	
 	power = interval_CPU_power(i-1);
@@ -53,13 +53,13 @@ double ResourceMonitor::interval_CPU_power_est(int i, double prev_power) {
 
 
 
-ResourceMonitor::ResourceMonitor() {
+ResourceMonitorIntel::ResourceMonitorIntel() {
 	running = false;
 	pthread_mutex_init(&lock, NULL);
 
 }
 
-ResourceMonitor::~ResourceMonitor() {
+ResourceMonitorIntel::~ResourceMonitorIntel() {
 	pthread_mutex_destroy(&lock);
 
 }
@@ -69,7 +69,7 @@ ResourceMonitor::~ResourceMonitor() {
  * Initialize the monitoring object, trying to access each relevant
  * system
  */
-void ResourceMonitor::init() {
+void ResourceMonitorIntel::init() {
 
 	if (running) {
 		cerr << "Already running. Doing nothing." << endl;
@@ -85,7 +85,7 @@ void ResourceMonitor::init() {
 
 }
 
-void ResourceMonitor::startMonitoring(double seconds) {
+void ResourceMonitorIntel::startMonitoring(double seconds) {
 
 	measure_period = seconds * 1000000;
 	setEndMonitor(false);
@@ -96,7 +96,7 @@ void ResourceMonitor::startMonitoring(double seconds) {
 }
 
 
-void ResourceMonitor::endMonitoring() {
+void ResourceMonitorIntel::endMonitoring() {
 
 	gettimeofday(&_endTime, &_timeZone);
 	setEndMonitor(true);
@@ -110,7 +110,7 @@ void ResourceMonitor::endMonitoring() {
  * Return total energy consumption from the CPU in mJ
  *
  */
-double ResourceMonitor::getTotalEnergyCPU() {
+double ResourceMonitorIntel::getTotalEnergyCPU() {
 	// probeCPU fetches energy
 	// Get the first measure, the last one, and substract them
 	double energy;
@@ -139,7 +139,7 @@ double ResourceMonitor::getTotalEnergyCPU() {
  * Return total energy consumption from the GPU in mJ
  *
  */
-double ResourceMonitor::getTotalEnergyGPU() {
+double ResourceMonitorIntel::getTotalEnergyGPU() {
 	// probeGPU fetches power
 	// Read _powerGPU and approximate the power for each interval as the mean value between the
 	// starting and the ending power of the interval
@@ -160,14 +160,14 @@ double ResourceMonitor::getTotalEnergyGPU() {
 }
 
 
-double ResourceMonitor::getTotalExecTime() {
+double ResourceMonitorIntel::getTotalExecTime() {
 
 	//return timeInterval(_timestamp.front(), _timestamp.back());
 	return timeInterval(_startTime, _endTime);
 }
 
 
-double ResourceMonitor::getAveragePowerCPU() {
+double ResourceMonitorIntel::getAveragePowerCPU() {
 
 	double energy, time;
 	time = getTotalExecTime();
@@ -176,7 +176,7 @@ double ResourceMonitor::getAveragePowerCPU() {
 	return energy/time;
 }
 
-double ResourceMonitor::getAveragePowerGPU() {	
+double ResourceMonitorIntel::getAveragePowerGPU() {	
 
 	double avg_power = 0;
 	int num_intervals = _powerGPU.size()-1;
@@ -190,7 +190,7 @@ double ResourceMonitor::getAveragePowerGPU() {
 
 
 
-void ResourceMonitor::getPowerCPU(vector<double> &timestamp, vector<double> &power) {
+void ResourceMonitorIntel::getPowerCPU(vector<double> &timestamp, vector<double> &power) {
 	
 	double avg_power = getAveragePowerCPU();
 	double time;
@@ -209,7 +209,7 @@ void ResourceMonitor::getPowerCPU(vector<double> &timestamp, vector<double> &pow
 	}
 }
 
-void ResourceMonitor::getPowerGPU(vector<double> &timestamp, vector<double> &power) {
+void ResourceMonitorIntel::getPowerGPU(vector<double> &timestamp, vector<double> &power) {
 
 	double time;
 
@@ -228,7 +228,7 @@ void ResourceMonitor::getPowerGPU(vector<double> &timestamp, vector<double> &pow
  * intervalTime contains the number of second for the corresponding interval
  * powerCPU and powerGPU contain the average power for the corresponding interval
  */
-void ResourceMonitor::getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU) {
+void ResourceMonitorIntel::getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU) {
 
 	double time;
 	//double avg_power = getAveragePowerCPU();
@@ -260,14 +260,14 @@ void ResourceMonitor::getPower(vector<double> &timestamp, vector<double> &powerC
 
 
 
-void * ResourceMonitor::background_monitor_handler(void * arg) {
+void * ResourceMonitorIntel::background_monitor_handler(void * arg) {
 
 	if (arg == NULL)
 		pthread_exit(NULL);
 
-	cerr << "Inside thread" << endl;
+//	cerr << "Inside thread" << endl;
 
-	ResourceMonitor *parent = (ResourceMonitor*)arg;
+	ResourceMonitorIntel *parent = (ResourceMonitorIntel*)arg;
 	useconds_t wait_time = parent->measure_period;
 
 
@@ -277,7 +277,7 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 		rawPowerGPU_t gpuRawPower;
 		powerGPU_t gpuPower;
 
-		cerr << "Measuring" << endl;
+//		cerr << "Measuring" << endl;
 
 		// Check time
 		gettimeofday(&timestamp, NULL);		
@@ -299,7 +299,7 @@ void * ResourceMonitor::background_monitor_handler(void * arg) {
 	pthread_exit(NULL);
 }
 
-bool ResourceMonitor::monitorMustEnd() {
+bool ResourceMonitorIntel::monitorMustEnd() {
 	bool value;
 	pthread_mutex_lock(&lock);
 	value = end_monitoring;
@@ -308,18 +308,18 @@ bool ResourceMonitor::monitorMustEnd() {
 	return value;
 }
 
-void ResourceMonitor::setEndMonitor(bool value) {
+void ResourceMonitorIntel::setEndMonitor(bool value) {
 	pthread_mutex_lock(&lock);
 	end_monitoring = value;
 	pthread_mutex_unlock(&lock);
 }
 
 
-double ResourceMonitor::timeval2double(struct timeval time) {
+double ResourceMonitorIntel::timeval2double(struct timeval time) {
 	return static_cast<double>(time.tv_sec) + static_cast<double>(time.tv_usec)/(1000*1000);
 }
 
-double ResourceMonitor::timeInterval(struct timeval start, struct timeval end) {
+double ResourceMonitorIntel::timeInterval(struct timeval start, struct timeval end) {
 		double time_start, time_end;
 
 		time_start = static_cast<double>(start.tv_sec) + static_cast<double>(start.tv_usec)/(1000*1000);

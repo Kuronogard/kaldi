@@ -21,6 +21,7 @@
 
 #include "lat/compose-lattice-pruned.h"
 #include "lat/lattice-functions.h"
+#include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
 
@@ -54,6 +55,7 @@ class PrunedCompactLatticeComposer {
 
   // Does the composition.  You must call this just once per object.
   void Compose();
+  void getStatistics(ComposeLatticePrunedStats &stats);
 
  private:
 
@@ -375,6 +377,8 @@ class PrunedCompactLatticeComposer {
   // will matter more for early iterations of the composition, when we need
   // to access the output lattice in topological order).
   std::set<int32> accessed_lat_states_;
+  
+  ComposeLatticePrunedStats stats_;
 };
 
 
@@ -418,11 +422,23 @@ int32 PrunedCompactLatticeComposer::GetCurrentArcLimit() const {
 
 
 void PrunedCompactLatticeComposer::RecomputePruningInfo() {
+    
+  // Start monitoring resource consumption
+  ResourceMonitor resourceMonitor;
+  resourceMonitor.init();
+  
+  resourceMonitor.startMonitoring(opts_.measure_period);
+    
   std::vector<int32> all_composed_states;
   GetTopsortedStateList(&all_composed_states);
   ComputeForwardCosts(all_composed_states);
   ComputeBackwardCosts(all_composed_states);
   ComputeDeltaBackwardCosts(all_composed_states);
+  
+  // End monitoring resource consumption
+  resourceMonitor.endMonitoring();
+  stats_.computeHeuristicTime += resourceMonitor.getTotalExecTime();
+  stats_.computeHeuristicEnergy += resourceMonitor.getTotalEnergyCPU();
 }
 
 void PrunedCompactLatticeComposer::ComputeForwardCosts(
@@ -627,7 +643,8 @@ PrunedCompactLatticeComposer::PrunedCompactLatticeComposer(
     clat_out_(composed_clat),
     num_arcs_out_(0),
     output_best_cost_(std::numeric_limits<double>::infinity()),
-    current_cutoff_(std::numeric_limits<double>::infinity()) {
+    current_cutoff_(std::numeric_limits<double>::infinity()),
+    stats_() {
   clat_out_->DeleteStates();
   depth_penalty_ = -1000;
 }
@@ -771,12 +788,22 @@ void PrunedCompactLatticeComposer::ProcessTransition(int32 src_composed_state,
   // Note: we expect that ilabel == olabel, since this is a CompactLattice, but this
   // may not be so if we extend this to work with Lattice.
   fst::StdArc lm_arc;
-  if (!det_fst_->GetArc(src_info->lm_state, olabel, &lm_arc)) {
+  ResourceMonitor resourceMonitor;
+  resourceMonitor.init();
+  
+  resourceMonitor.startMonitoring(opts_.measure_period);
+  bool getArcCorrect = det_fst_->GetArc(src_info->lm_state, olabel, &lm_arc);
+  resourceMonitor.endMonitoring();
+  stats_.rnnComputationsTime += resourceMonitor.getTotalExecTime();
+  stats_.rnnComputationsEnergy += resourceMonitor.getTotalEnergyCPU();
+  
+  if (!getArcCorrect) {
     // for normal language models we don't expect this to happen, but the
     // appropriate behavior is to do nothing; the composed arc does not exist,
     // so there is no arc to add and no new state to create.
     return;
   }
+  
   int32 dest_lm_state = lm_arc.nextstate;
   // The following assertion is necessary because CompactLattice cannot support
   // different ilabel vs. olabel; and also it's an expectation about
@@ -875,12 +902,23 @@ static int32 TotalNumArcs(const CompactLattice &clat) {
   return num_arcs;
 }
 
+void PrunedCompactLatticeComposer::getStatistics(ComposeLatticePrunedStats &stats) {
+   stats.copyFrom(this->stats_);
+}
+
 
 void PrunedCompactLatticeComposer::Compose() {
   if (clat_in_.NumStates() == 0) {
     KALDI_WARN << "Input lattice to composition is empty.";
     return;
   }
+  
+  // Start monitoring the resource consumption
+  ResourceMonitor resourceMonitor;
+  resourceMonitor.init();
+  
+  resourceMonitor.startMonitoring(opts_.measure_period);
+  
   ComputeLatticeStateInfo();
   AddFirstState();
   // while (we have not reached final state  ||
@@ -901,6 +939,11 @@ void PrunedCompactLatticeComposer::Compose() {
 
   fst::Connect(clat_out_);
   TopSortCompactLatticeIfNeeded(clat_out_);
+
+  // Finish monitoring the resources
+  resourceMonitor.endMonitoring();
+  stats_.totalTime = resourceMonitor.getTotalExecTime();
+  stats_.totalEnergy = resourceMonitor.getTotalEnergyCPU();
 
   if (GetVerboseLevel() >= 2) {
     int32 num_arcs_in = TotalNumArcs(clat_in_),
@@ -939,9 +982,15 @@ void ComposeCompactLatticePruned(
     const ComposeLatticePrunedOptions &opts,
     const CompactLattice &clat,
     fst::DeterministicOnDemandFst<fst::StdArc> *det_fst,
-    CompactLattice* composed_clat) {
+    CompactLattice* composed_clat,
+    ComposeLatticePrunedStats* stats) {
   PrunedCompactLatticeComposer composer(opts, clat, det_fst, composed_clat);
+
   composer.Compose();
+  
+  if (stats != NULL) {
+    composer.getStatistics(*stats);
+  }
 }
 
 } // namespace kaldi

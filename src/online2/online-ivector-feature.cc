@@ -18,6 +18,7 @@
 // limitations under the License.
 
 #include "online2/online-ivector-feature.h"
+#include "base/timer.h"
 
 namespace kaldi {
 
@@ -176,20 +177,59 @@ void OnlineIvectorFeature::UpdateFrameWeights(
 
 void OnlineIvectorFeature::UpdateStatsForFrame(int32 t,
                                                BaseFloat weight) {
+
+	// The parts measured by time1 are acceleratod on hardware (58.2% of ivector)
+	// The parts measured by time2 are executed on software (30.8% of ivector)
+
+	Timer time1;
+//	time1.Reset();
+
   int32 feat_dim = lda_normalized_->Dim();
   Vector<BaseFloat> feat(feat_dim),  // features given to iVector extractor
       log_likes(info_.diag_ubm.NumGauss());
+
+
+	// LDA*MFCC + OFF [40x280]*[280] + [40]
   lda_normalized_->GetFrame(t, &feat);
+
+	// M1*d + g_costst + -0.5*M2*d^2
   info_.diag_ubm.LogLikelihoods(feat, &log_likes);
+
   // "posterior" stores the pruned posteriors for Gaussians in the UBM.
   std::vector<std::pair<int32, BaseFloat> > posterior;
+
+//	statistics_.ubm_time += time1.Elapsed();
+
+	Timer time2;
+//	time2.Reset();
+	
+	// Vector to Posterior accounts for a relevant part (11.8%), but it is not easily parallelized
   tot_ubm_loglike_ += weight *
       VectorToPosteriorEntry(log_likes, info_.num_gselect,
                              info_.min_post, &posterior);
+//	statistics_.acstats += time2.Elapsed();
+
+//	time1.Reset();
+	// LDA*MFCC + OFF [40x280]*[280] + [40]
+  lda_->GetFrame(t, &feat); // get feature without CMN.
+
+	// Multiply each posterior for a fixed scale
   for (size_t i = 0; i < posterior.size(); i++)
     posterior[i].second *= info_.posterior_scale * weight;
-  lda_->GetFrame(t, &feat); // get feature without CMN.
+
+//	statistics_.ubm_time += time1.Elapsed();
+
+	time2.Reset();
+	// This part account for 19.4% of ivector
+	IvectorEstimationStatsStatistics accStats;
+	ivector_stats_.ResetStatistics();
+	// LIN_TERM = LIN_TERM + weight*Sigma_inv_M[g]*Feat^T
+	// QUAD_TERM_VEC = QUAD_TERM_VEC + U_g
   ivector_stats_.AccStats(info_.extractor, feat, posterior);
+	statistics_.acstats += time2.Elapsed();
+
+	ivector_stats_.GetStatistics(accStats);
+	statistics_.ivecEstimationStats += accStats;
 }
 
 void OnlineIvectorFeature::UpdateStatsUntilFrame(int32 frame) {
@@ -200,9 +240,15 @@ void OnlineIvectorFeature::UpdateStatsUntilFrame(int32 frame) {
   int32 ivector_period = info_.ivector_period;
   int32 num_cg_iters = info_.num_cg_iters;
 
+
   for (; num_frames_stats_ <= frame; num_frames_stats_++) {
     int32 t = num_frames_stats_;
+
+
+		// More than 88.9% Of the excution goes here
     UpdateStatsForFrame(t, 1.0);
+		statistics_.update_time++;
+
     if ((!info_.use_most_recent_ivector && t % ivector_period == 0) ||
         (info_.use_most_recent_ivector && t == frame)) {
       ivector_stats_.GetIvector(num_cg_iters, &current_ivector_);
@@ -224,7 +270,7 @@ void OnlineIvectorFeature::UpdateStatsUntilFrameWeighted(int32 frame) {
 
   int32 ivector_period = info_.ivector_period;
   int32 num_cg_iters = info_.num_cg_iters;
-
+   
   for (; num_frames_stats_ <= frame; num_frames_stats_++) {
     int32 t = num_frames_stats_;
     // Instead of just updating frame t, we update all frames that need updating
@@ -235,7 +281,8 @@ void OnlineIvectorFeature::UpdateStatsUntilFrameWeighted(int32 frame) {
       delta_weights_.pop();
       int32 frame = p.first;
       BaseFloat weight = p.second;
-      UpdateStatsForFrame(frame, weight);
+     UpdateStatsForFrame(frame, weight);
+
       if (debug_weights) {
         if (current_frame_weight_debug_.size() <= frame)
           current_frame_weight_debug_.resize(frame + 1, 0.0);
@@ -259,13 +306,15 @@ void OnlineIvectorFeature::GetFrame(int32 frame,
                                     VectorBase<BaseFloat> *feat) {
   int32 frame_to_update_until = (info_.greedy_ivector_extractor ?
                                  lda_->NumFramesReady() - 1 : frame);
-  if (!delta_weights_provided_)  // No silence weighting.
+  if (!delta_weights_provided_) {  // No silence weighting.
+		// The 99.9% of the execution goes here
     UpdateStatsUntilFrame(frame_to_update_until);
-  else
+	}
+  else {
     UpdateStatsUntilFrameWeighted(frame_to_update_until);
+	}
 
   KALDI_ASSERT(feat->Dim() == this->Dim());
-
   if (info_.use_most_recent_ivector) {
     KALDI_VLOG(5) << "due to --use-most-recent-ivector=true, using iVector "
                   << "from frame " << num_frames_stats_ << " for frame "
@@ -334,6 +383,7 @@ void OnlineIvectorFeature::GetAdaptationState(
 OnlineIvectorFeature::OnlineIvectorFeature(
     const OnlineIvectorExtractionInfo &info,
     OnlineFeatureInterface *base_feature):
+    statistics_(),
     info_(info), base_(base_feature),
     ivector_stats_(info_.extractor.IvectorDim(),
                    info_.extractor.PriorOffset(),

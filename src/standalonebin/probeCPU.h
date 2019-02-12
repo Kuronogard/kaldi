@@ -1,4 +1,5 @@
-
+#ifndef PROBECPU_H
+#define PROBECPU_H
 
 /* Hamid: rapl-read section starts  ------------------------------ 
 ---------------------------------------------------------------- */
@@ -111,3 +112,5 @@ private:
   int core = 0;
 	
 };
+
+#endif

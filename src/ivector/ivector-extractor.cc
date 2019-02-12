@@ -22,6 +22,7 @@
 
 #include "ivector/ivector-extractor.h"
 #include "util/kaldi-thread.h"
+#include "base/timer.h"
 
 namespace kaldi {
 
@@ -534,12 +535,17 @@ void IvectorExtractor::TransformIvectors(const MatrixBase<double> &T,
   prior_offset_ = new_prior_offset;
 }
 
+/*****************
+// TODO: Study This function, as it accounts for around 19.4% of the ivector computation
+******************/
 void OnlineIvectorEstimationStats::AccStats(
     const IvectorExtractor &extractor,
     const VectorBase<BaseFloat> &feature,
     const std::vector<std::pair<int32, BaseFloat> > &gauss_post) {
   KALDI_ASSERT(extractor.IvectorDim() == this->IvectorDim());
   KALDI_ASSERT(!extractor.IvectorDependentWeights());
+
+	Timer timer;
 
   Vector<double> feature_dbl(feature);
   double tot_weight = 0.0;
@@ -548,20 +554,38 @@ void OnlineIvectorEstimationStats::AccStats(
   SubVector<double> quadratic_term_vec(quadratic_term_.Data(),
                                        quadratic_term_dim);
 
+	// TODO: probably most of the execution time is here
+	// A loop with a Mat*Vec operation
   for (size_t idx = 0; idx < gauss_post.size(); idx++) {
     int32 g = gauss_post[idx].first;
     double weight = gauss_post[idx].second;
     // allow negative weights; it's needed in the online iVector extraction
     // with speech-silence detection based on decoder traceback (we subtract
     // stuff we previously added if the traceback changes).
+		statistics_.accStatsTime ++;
+		std::cerr << "Gaus_post_size: " << gauss_post.size() << " g: " << g << std::endl;
+
     if (weight == 0.0)
       continue;
+	
+		
+  	//timer.Reset();
     linear_term_.AddMatVec(weight, extractor.Sigma_inv_M_[g], kTrans,
                            feature_dbl, 1.0);
+
     SubVector<double> U_g(extractor.U_, g);
     quadratic_term_vec.AddVec(weight, U_g);
+    //statistics_.accStatsTime += timer.Elapsed();
     tot_weight += weight;
+
+		std::cerr << "Sigma r: " << extractor.Sigma_inv_M_[g].NumRows() << " Sigma c: " << extractor.Sigma_inv_M_[g].NumCols();
+		std::cerr << " Sigma dim: " << extractor.Sigma_inv_M_.size() << " Quad_term_dim: " << quadratic_term_vec.Dim() ;
+		std::cerr << " U_ r: " << extractor.U_.NumRows();
+	  std::cerr << " Linear_dim : " << linear_term_.Dim();
+		std::cerr << std::endl;
   }
+
+
   if (max_count_ > 0.0) {
     // see comments in header RE max_count for explanation.  It relates to
     // prior scaling when the count exceeds max_count_
@@ -580,6 +604,8 @@ void OnlineIvectorEstimationStats::AccStats(
   }
 
   num_frames_ += tot_weight;
+	//std::cerr << "AccStats: " << statistics_.accStatsTime << std::endl;
+
 }
 
 void OnlineIvectorEstimationStats::Scale(double scale) {

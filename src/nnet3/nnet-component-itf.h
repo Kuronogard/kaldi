@@ -557,7 +557,7 @@ protected:
 
 		if(!quantize) return;
 
-		std::cerr << "Quantize weights" << std::endl;
+		//std::cerr << "Quantize weights" << std::endl;
 
 		//BaseFloat *w_data = weights.Data();
 		for (int r = 0; r < weights.NumRows(); r++) {
@@ -591,11 +591,11 @@ protected:
 	
 		if(!quantize) return;
 
-		std::cerr << "quantize inputs" << std::endl;
+		//std::cerr << "quantize inputs" << std::endl;
 
 		KALDI_ASSERT(quant_correct);
 
-		std::cerr << "QUANTIZE Inputs" << std::endl;
+		//std::cerr << "QUANTIZE Inputs" << std::endl;
 
 		//BaseFloat *in_data = inputs.Data();
 		for (int r = 0; r < inputs.NumRows(); r++) {

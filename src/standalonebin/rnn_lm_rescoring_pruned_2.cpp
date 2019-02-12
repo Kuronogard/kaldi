@@ -11,7 +11,6 @@
 #include "nnet3/nnet-utils.h"
 #include "standalonebin/resource_monitor.h"
 
-
 #define ABS_(a) (((a)>=0)? (a) : -(a))
 #define MAXABS_(a, b)  ((ABS_(a) > ABS_(b))? ABS_(a) : ABS_(b))
 
@@ -27,6 +26,7 @@ QuantParams quant_params[8] = {
   QuantParams(-8.27293, 8.27293,  -1.66043,  1.66043, -127, 127, -127, 127),
   QuantParams(-29.213,  29.213,   -2.90258,  2.90258, -127, 127, -127, 127)
 };
+
 
 
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	ParseOptions po(usage);
 
 	rnnlm::RnnlmComputeStateComputationOptions opts;
-  ComposeLatticePrunedOptions compose_pruned_opts;
+    ComposeLatticePrunedOptions compose_pruned_opts;
 	BaseFloat rescore_lm_scale = 1.0;
   BaseFloat lm_scale = 1.0;
 	BaseFloat acoustic_scale = 1.0;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 	po.Register("quantize", &quantize, "Quantize network");
 
 	opts.Register(&po);
-  compose_pruned_opts.Register(&po);
+    compose_pruned_opts.Register(&po);
 
 	po.Read(argc, argv);
 
@@ -125,16 +125,33 @@ int main(int argc, char **argv) {
 	}
 
 
+  // read old WFST LM (ARPA)
+	VectorFst<StdArc> *std_old_LM;
+	std_old_LM = ReadFstKaldi(oldLM_filename);
+	if (std_old_LM->Properties(fst::kILabelSorted, true) == 0) {
+		ArcSort(std_old_LM, fst::ILabelCompare<StdArc>());
+	}
+	if (std_old_LM->Start() == fst::kNoStateId ) {
+		KALDI_WARN << "old_LM empty";
+	}
 
-	// Read Old LM
-	fst::ScaleDeterministicOnDemandFst *lm_to_subtract_det_scale = NULL;
-	fst::BackoffDeterministicOnDemandFst<StdArc> *lm_to_subtract_det_backoff = NULL;
-	VectorFst<StdArc> *lm_to_subtract_fst = NULL;
-	
-	lm_to_subtract_fst = fst::ReadAndPrepareLmFst(oldLM_filename);
-	lm_to_subtract_det_backoff = new fst::BackoffDeterministicOnDemandFst<StdArc>(*lm_to_subtract_fst);
-	lm_to_subtract_det_scale = new fst::ScaleDeterministicOnDemandFst(-lm_scale, lm_to_subtract_det_backoff);
 
+	// old_LM is the LM interpreted using the LatticeWeight semiring.
+	fst::CacheOptions cache_opts(true, num_states_cache);
+	fst::MapFstOptions mapfst_opts(cache_opts);
+	fst::StdToLatticeMapper<BaseFloat> mapper;
+	fst::MapFst<StdArc, LatticeArc, fst::StdToLatticeMapper<BaseFloat> > old_LM(*std_old_LM, mapper, mapfst_opts);
+
+  delete std_old_LM;
+
+	if (old_LM.Start() == fst::kNoStateId) {
+		KALDI_WARN << "old LM map empty";
+	}
+
+
+	// These lines are an optimization for the composition
+	fst::TableComposeOptions compose_opts(fst::TableMatcherOptions(), true, fst::SEQUENCE_FILTER, fst::MATCH_INPUT);
+	fst::TableComposeCache<fst::Fst<LatticeArc> > lm_compose_cache(compose_opts);
 
   // read new RNN LM (RNN LSTM)
 	kaldi::nnet3::Nnet rnnlm;
@@ -168,7 +185,7 @@ int main(int argc, char **argv) {
 
 
   // read lattice (Normal lattice)
-	SequentialCompactLatticeReader clattice_reader(lats_rspecifier);
+	SequentialLatticeReader lattice_reader(lats_rspecifier);
 
 	// create transcription writter and symbol-table reader objects
 	Int32VectorWriter trans_writer(transcription_wspecifier);
@@ -210,40 +227,95 @@ int main(int argc, char **argv) {
 
 	try {
 
-		//rnnlm::KaldiRnnlmDeterministicFst* lm_to_add_orig = new rnnlm::KaldiRnnDeterministicFst(max_ngram_order, info);
-
 		int32 num_success = 0, num_fail = 0;
-		for(; !clattice_reader.Done(); clattice_reader.Next()) {
-			std::string utt = clattice_reader.Key();
-			CompactLattice clat = clattice_reader.Value();
-			clattice_reader.FreeCurrent();
+		for(; !lattice_reader.Done(); lattice_reader.Next()) {
+			std::string utt = lattice_reader.Key();
+			Lattice lat = lattice_reader.Value();
+			lattice_reader.FreeCurrent();
 		
 			std::cout << "Starting LM rescore for " << utt << std::endl;
 
-            rnnlm::KaldiRnnlmDeterministicFst* lm_to_add_orig = new rnnlm::KaldiRnnlmDeterministicFst(max_ngram_order, info, rnnlm_measure_period);
 			//rescore_timer.Reset();		
 			resourceMonitor.startMonitoring(measure_period);
 
+			// ---------------------------------------------------
+			//		Remove old LM weights
+			// ---------------------------------------------------
+			// Escalar lattice -1/lm_scale y ordenar por oLabel
+			// componer con oldLM
+			// Invertir lattice
+			// Determinizar lattice
+			// Escalar lattice -1
 
-			fst::DeterministicOnDemandFst<StdArc> *lm_to_add = new fst::ScaleDeterministicOnDemandFst(lm_scale, lm_to_add_orig);
-			fst::ScaleLattice(fst::AcousticLatticeScale(acoustic_scale), &clat);
-		
-			TopSortCompactLatticeIfNeeded(&clat);
 
-			fst::ComposeDeterministicOnDemandFst<StdArc> combined_lms(lm_to_subtract_det_scale, lm_to_add);
+			std::cout << "Remove old weights" << std::endl;
 
-			CompactLattice composed_clat;
-			ComposeCompactLatticeDeterministic(clat, &combined_lms, &composed_clat);
+			fst::ScaleLattice(fst::GraphLatticeScale(-1.0/rescore_lm_scale), &lat);
 
-			//lm_to_add_orig->Clear();
+			//KALDI_WARN << "old_LM arcs " << old_LM.NumArcs(1);
+			//KALDI_WARN << "qewdqwe";
 
-			if (composed_clat.NumStates() == 0) {
+			ArcSort(&lat, fst::OLabelCompare<LatticeArc>());
+
+
+			Lattice lat_nolm;
+			//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
+			Compose(lat, old_LM, &lat_nolm);
+			if ( lat_nolm.Start() == fst::kNoStateId ) {
+				resourceMonitor.endMonitoring();
+				std::cout << "[WARN." << utt << "] unscored lattice empty." << std::endl;
 				num_fail++;
+				continue;
+			}	
+
+			Invert(&lat_nolm);
+
+
+			CompactLattice clat_nolm_determinized;
+			DeterminizeLattice(lat_nolm, &clat_nolm_determinized);
+
+
+			fst::ScaleLattice(fst::GraphLatticeScale(-1), &clat_nolm_determinized);
+
+
+			// ---------------------------------------------------
+			//		Add new LM weights	
+			// ---------------------------------------------------
+			// componer con newLM
+			// Invertir lattice
+			// Determinizar lattice
+			// Escalar por lm_scale
+
+			std::cerr << "Add new weights" << std::endl;
+
+			//ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
+            TopSortCompactLatticeIfNeeded(&clat_nolm_determinized);
+			rnnlm::KaldiRnnlmDeterministicFst new_LM_wrapped(max_ngram_order, info, rnnlm_measure_period);
+
+			std::cerr << "Compose with LM" << std::endl;
+			CompactLattice clat_rescored;
+			//ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
+            ComposeCompactLatticePruned(compose_pruned_opts, clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
+			if (clat_rescored.Start() == fst::kNoStateId) {
+				resourceMonitor.endMonitoring();
+				std::cout << "[WARN." << utt << "] Rescored lattice is empty." << std::endl;
+				num_fail++;
+				continue;
 			}
-			else {
-				fst::ScaleLattice(fst::AcousticLatticeScale(1.0/acoustic_scale), &composed_clat);
-				num_success++;
-			}
+
+
+			std::cerr << "Convert to normal lattice and invert" << std::endl;
+			Lattice lat_rescored;
+			ConvertLattice(clat_rescored, &lat_rescored);
+			Invert(&lat_rescored);
+
+			std::cerr << "Determinize lattice" << std::endl;
+			CompactLattice clat_rescored_determinized;
+			DeterminizeLattice(lat_rescored, &clat_rescored_determinized);
+
+
+			std::cerr << "Scale lattice" << std::endl;
+			fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
 
 			//double rescore_elapsed = rescore_timer.Elapsed();
 			resourceMonitor.endMonitoring();
@@ -265,12 +337,12 @@ int main(int argc, char **argv) {
 			scale[1][0] = lm2acoustic_scale;
 			scale[1][1] = acoustic_scale;
 
-			ScaleLattice(scale, &composed_clat);
-			AddWordInsPenToCompactLattice(word_ins_penalty, &composed_clat);
+			ScaleLattice(scale, &clat_rescored_determinized);
+			AddWordInsPenToCompactLattice(word_ins_penalty, &clat_rescored_determinized);
 
 	
 			CompactLattice clat_best_path;
-			CompactLatticeShortestPath(composed_clat, &clat_best_path);
+			CompactLatticeShortestPath(clat_rescored_determinized, &clat_best_path);
 
 
 			// ---------------------------------------------------
@@ -293,6 +365,8 @@ int main(int argc, char **argv) {
 				num_fail++;
 				continue;
 			}
+
+			//num_success++;		
 
 			// write symbols
 			trans_writer.Write(utt, words);
@@ -317,7 +391,7 @@ int main(int argc, char **argv) {
 				double rnnlm_time, rnnlm_energy;
 				int rnnlm_num_execs;
 
-				lm_to_add_orig->GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
+				new_LM_wrapped.GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
 
 				if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
 
@@ -337,7 +411,6 @@ int main(int argc, char **argv) {
 				}
 			}
 
-	    delete lm_to_add;
 		} // End of the lattice for loop
 
 	} catch (std::exception &e) {

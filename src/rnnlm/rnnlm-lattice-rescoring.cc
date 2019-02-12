@@ -20,6 +20,7 @@
 // limitations under the License.
 
 #include <utility>
+#include <iostream>
 
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "util/stl-utils.h"
@@ -45,14 +46,15 @@ void KaldiRnnlmDeterministicFst::Clear() {
   for (int32 i = 1; i < size; i++)
     delete state_to_rnnlm_state_[i];
 
-	accum_exec_time_ = 0;
+    accum_exec_time_ = 0;
 	accum_energy_ = 0;
 	num_network_executions_ = 0;  
+    std::cout << "Clear rnnlm measurements to 0" << std::endl;
 
-  state_to_rnnlm_state_.resize(1);
-  state_to_wseq_.resize(1);
-  wseq_to_state_.clear();
-  wseq_to_state_[state_to_wseq_[0]] = 0;
+    state_to_rnnlm_state_.resize(1);
+    state_to_wseq_.resize(1);
+    wseq_to_state_.clear();
+    wseq_to_state_[state_to_wseq_[0]] = 0;
 }
 
 KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
@@ -84,6 +86,7 @@ void KaldiRnnlmDeterministicFst::GetStatistics(double &execTime, double &energy,
 	execTime = accum_exec_time_;
 	energy = accum_energy_;
 	num_executions = num_network_executions_;
+    std::cout << "Read statistics" << std::endl;
 }
 
 
@@ -100,6 +103,7 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
   /// At this point, we have created the state.
   KALDI_ASSERT(static_cast<size_t>(s) < state_to_wseq_.size());
 
+  std::cout << "Get arc" << std::endl;
   std::vector<Label> word_seq = state_to_wseq_[s];
   const RnnlmComputeState* rnnlm = state_to_rnnlm_state_[s];
 
@@ -144,7 +148,7 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
 
     state_to_wseq_.push_back(word_seq);
     state_to_rnnlm_state_.push_back(rnnlm2);
-
+        std::cout << "Num network executions + 1 " << num_network_executions_ << std::endl;
 		num_network_executions_++;
 	}
 

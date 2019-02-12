@@ -1,6 +1,7 @@
 
 all:
 	-rm -f arpa2fst
+
 EXTRA_CXXFLAGS = -Wno-sign-compare
 include ../kaldi.mk
 
@@ -11,10 +12,27 @@ LDLIBS += $(CUDA_LDLIBS)
 #BINFILES = resourceMonitorARMtest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 #BINFILES = rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
-BINFILES = compare_acprobs rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
+BINFILES = lattice_compute_metrics check_metric compare_acprobs rapl-read aclattice2lattice decode rnn_lm_rescoring \
+           rnn_lm_rescoring_pruned rnn_lm_rescoring_pruned_2 wfst_lm_rescoring extract_probs_B extract_probs_B_accel
+           
+           
+           
+#if(PLATFORM STREQUAL "PLATFORM_INTEL")
+#	OBJFILES = resource_monitor_intel.o probeCPU.o probeGPU.o
+#elseif(PLATFORM STREQUAL "PLATFORM_ARM")
+#	OBJFILES = resource_monitor_ARM.o probeARM.o
+#endif()
 
-#OBJFILES = resource_monitor_ARM.o probeARM.o
-OBJFILES = resource_monitor.o probeCPU.o probeGPU.o
+ifeq ($(PLATFORM), PLATFORM_INTEL)
+	OBJFILES = resource_monitor_intel.o probeCPU.o probeGPU.o
+else
+ifeq ($(PLATFORM), PLATFORM_ARM)
+	#$(warning The following command will probably fail, in that case add -fPIC to your CXXFLAGS and remake all.)
+	OBJFILES = resource_monitor_ARM.o probeARM.o
+else
+	$(error No platform defined)
+endif
+endif
 
 
 LIBNAME = standalone-utils

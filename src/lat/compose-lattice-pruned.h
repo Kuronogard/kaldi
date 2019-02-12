@@ -121,10 +121,13 @@ struct ComposeLatticePrunedOptions {
   // heuristics will be less accurate).
   BaseFloat growth_ratio;
 
+  double measure_period;
+
   ComposeLatticePrunedOptions(): lattice_compose_beam(6.0),
                                  max_arcs(100000),
                                  initial_num_arcs(100),
-                                 growth_ratio(1.5) { }
+                                 growth_ratio(1.5),
+                                 measure_period(0.001) { }
   void Register(OptionsItf *po) {
     po->Register("lattice-compose-beam", &lattice_compose_beam,
                  "Beam used in pruned lattice composition, which determines how "
@@ -135,7 +138,34 @@ struct ComposeLatticePrunedOptions {
     po->Register("growth-ratio", &growth_ratio, "Factor used in the lattice "
                  "composition algorithm; must be >1.0.  Affects speed vs. "
                  "the optimality of the best-first composition.");
+    po->Register("latcomp-measure-period", &measure_period, "time (s) between measurements");
   }
+};
+
+struct ComposeLatticePrunedStats {
+    double computeHeuristicTime;
+    double rnnComputationsTime;
+    double totalTime;
+    double computeHeuristicEnergy;
+    double rnnComputationsEnergy;
+    double totalEnergy;
+    
+    ComposeLatticePrunedStats(): 
+        computeHeuristicTime(0.0),
+        rnnComputationsTime(0.0), 
+        totalTime(0.0),
+        computeHeuristicEnergy(0.0),
+        rnnComputationsEnergy(0.0), 
+        totalEnergy(0.0) {}
+        
+    void copyFrom(ComposeLatticePrunedStats &other) {
+        computeHeuristicTime = other.computeHeuristicTime;
+        rnnComputationsTime = other.rnnComputationsTime;
+        totalTime = other.totalTime;
+        computeHeuristicEnergy = other.computeHeuristicEnergy;
+        rnnComputationsEnergy = other.rnnComputationsEnergy;
+        totalEnergy = other.totalEnergy;
+    }
 };
 
 
@@ -169,7 +199,8 @@ void ComposeCompactLatticePruned(
     const ComposeLatticePrunedOptions &opts,
     const CompactLattice &clat,
     fst::DeterministicOnDemandFst<fst::StdArc> *det_fst,
-    CompactLattice* composed_clat);
+    CompactLattice* composed_clat,
+    ComposeLatticePrunedStats* stats = NULL);
 
 
 
