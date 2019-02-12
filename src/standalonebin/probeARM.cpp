@@ -17,8 +17,7 @@ ProbeARM::ProbeARM() {
 }
 
 ProbeARM::~ProbeARM() {
-
-
+	close(i2c_file);
 }
 
 
@@ -63,7 +62,7 @@ double ProbeARM::readPower(uint8_t shunt_voltage_addr, uint8_t bus_voltage_addr,
 	current = shunt_voltage / shunt_resistance;
 	power = current * bus_voltage / 1000;
 
-	return power;
+	return power/1000;
 }
 
 

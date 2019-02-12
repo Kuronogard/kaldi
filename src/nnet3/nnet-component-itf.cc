@@ -86,7 +86,7 @@ Component* Component::ReadNew(std::istream &is, bool binary) {
   Component *ans = NewComponentOfType(token);
   if (!ans)
     KALDI_ERR << "Unknown component type " << token;
-	std::cerr << "Created component '" << token << "'" << std::endl;
+  //std::cerr << "Created component '" << token << "'" << std::endl;
   ans->Read(is, binary);
   return ans;
 }

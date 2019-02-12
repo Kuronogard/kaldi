@@ -22,6 +22,8 @@
 
 #include "ivector/ivector-extractor.h"
 #include "util/kaldi-thread.h"
+#include "base/timer.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 namespace kaldi {
 
@@ -541,13 +543,17 @@ void OnlineIvectorEstimationStats::AccStats(
   KALDI_ASSERT(extractor.IvectorDim() == this->IvectorDim());
   KALDI_ASSERT(!extractor.IvectorDependentWeights());
 
+	
   Vector<double> feature_dbl(feature);
   double tot_weight = 0.0;
   int32 ivector_dim = this->IvectorDim(),
       quadratic_term_dim = (ivector_dim * (ivector_dim + 1)) / 2;
   SubVector<double> quadratic_term_vec(quadratic_term_.Data(),
                                        quadratic_term_dim);
+	Timer time;
 
+//  resourceMonitor.startMonitoringNoThread();
+	time.Reset();
   for (size_t idx = 0; idx < gauss_post.size(); idx++) {
     int32 g = gauss_post[idx].first;
     double weight = gauss_post[idx].second;
@@ -556,12 +562,20 @@ void OnlineIvectorEstimationStats::AccStats(
     // stuff we previously added if the traceback changes).
     if (weight == 0.0)
       continue;
+		statistics_.numAccStats++;
+		
     linear_term_.AddMatVec(weight, extractor.Sigma_inv_M_[g], kTrans,
                            feature_dbl, 1.0);
     SubVector<double> U_g(extractor.U_, g);
     quadratic_term_vec.AddVec(weight, U_g);
     tot_weight += weight;
   }
+	statistics_.accelTime += time.Elapsed();
+//	resourceMonitor.endMonitoringNoThread();
+//	statistics_.accelTime = resourceMonitor.getTotalExecTime();
+//	statistics_.accelEnergyCPU = resourceMonitor.getTotalEnergyCPU();
+//	statistics_.accelEnergyGPU = resourceMonitor.getTotalEnergyGPU();
+
   if (max_count_ > 0.0) {
     // see comments in header RE max_count for explanation.  It relates to
     // prior scaling when the count exceeds max_count_
@@ -700,8 +714,12 @@ double OnlineIvectorEstimationStats::DefaultObjf() const {
 OnlineIvectorEstimationStats::OnlineIvectorEstimationStats(int32 ivector_dim,
                                                            BaseFloat prior_offset,
                                                            BaseFloat max_count):
+		statistics_(),
+		resourceMonitor(),
     prior_offset_(prior_offset), max_count_(max_count), num_frames_(0.0),
     quadratic_term_(ivector_dim), linear_term_(ivector_dim) {
+
+	resourceMonitor.init();
   if (ivector_dim != 0) {
     linear_term_(0) += prior_offset;
     quadratic_term_.AddToDiag(1.0);
@@ -710,11 +728,15 @@ OnlineIvectorEstimationStats::OnlineIvectorEstimationStats(int32 ivector_dim,
 
 OnlineIvectorEstimationStats::OnlineIvectorEstimationStats(
     const OnlineIvectorEstimationStats &other):
+		statistics_(other.statistics_),
+		resourceMonitor(),
     prior_offset_(other.prior_offset_),
     max_count_(other.max_count_),
     num_frames_(other.num_frames_),
     quadratic_term_(other.quadratic_term_),
-    linear_term_(other.linear_term_) { }
+    linear_term_(other.linear_term_) { 
+	resourceMonitor.init();
+}
 
 
 

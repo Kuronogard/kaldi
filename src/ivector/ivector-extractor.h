@@ -32,6 +32,7 @@
 #include "itf/options-itf.h"
 #include "util/common-utils.h"
 #include "hmm/posterior.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 namespace kaldi {
 
@@ -118,6 +119,61 @@ struct IvectorExtractorOptions {
     opts->Register("use-weights", &use_weights, "If true, regress the "
                    "log-weights on the iVector");
   }
+};
+
+
+class IvectorStatistics {
+ public:
+	double noAccelTime;
+	double noAccelEnergyCPU;
+	double noAccelEnergyGPU;
+	double accelTime;
+	double accelEnergyCPU;
+	double accelEnergyGPU;
+	int numAccStats;
+
+	IvectorStatistics() :
+		noAccelTime(0.0),
+		noAccelEnergyCPU(0.0),
+		noAccelEnergyGPU(0.0),
+		accelTime(0.0),
+		accelEnergyCPU(0.0),
+		accelEnergyGPU(0.0),
+	  numAccStats(0) {}
+
+	void Reset() {
+		noAccelTime = 0.0;
+		noAccelEnergyCPU = 0.0;
+		noAccelEnergyGPU = 0.0;
+		accelTime = 0.0;
+		accelEnergyCPU = 0.0;
+		accelEnergyGPU = 0.0;
+		numAccStats = 0;
+	}
+
+	IvectorStatistics& operator=(IvectorStatistics& other) {
+		noAccelTime = other.noAccelTime;
+		noAccelEnergyCPU = other.noAccelEnergyCPU;
+		noAccelEnergyGPU = other.noAccelEnergyGPU;
+		accelTime = other.accelTime;
+		accelEnergyCPU = other.accelEnergyCPU;
+		accelEnergyGPU = other.accelEnergyGPU;
+		numAccStats = other.numAccStats;		
+
+		return *this;
+	}
+
+	IvectorStatistics& operator+=(IvectorStatistics& other) {
+		noAccelTime += other.noAccelTime;
+		noAccelEnergyCPU += other.noAccelEnergyCPU;
+		noAccelEnergyGPU += other.noAccelEnergyGPU;
+		accelTime += other.accelTime;
+		accelEnergyCPU += other.accelEnergyCPU;
+		accelEnergyGPU += other.accelEnergyGPU;
+		numAccStats += other.numAccStats;
+
+		return *this;
+	}
 };
 
 
@@ -329,6 +385,14 @@ class OnlineIvectorEstimationStats {
 
   int32 IvectorDim() const { return linear_term_.Dim(); }
 
+	void GetStatistics(IvectorStatistics& stats) {
+		stats = statistics_;
+	}
+
+	void ResetStatistics() {
+		statistics_.Reset();
+	}
+
   /// This function gets the current estimate of the iVector.  Internally it
   /// does some work to compute it (currently matrix inversion, but we are doing
   /// to use Conjugate Gradient which will increase the speed).  At entry,
@@ -376,6 +440,10 @@ class OnlineIvectorEstimationStats {
   }
 
  protected:
+	IvectorStatistics statistics_;
+
+	ResourceMonitorARM resourceMonitor;
+
   /// Returns objective function per frame, at this iVector value.
   double Objf(const VectorBase<double> &ivector) const;
 

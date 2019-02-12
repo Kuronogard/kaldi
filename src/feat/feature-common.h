@@ -101,6 +101,28 @@ class ExampleFeatureComputer {
 };
 
 
+class FeatStatistics {
+ public:
+	double mel_time;
+	double cos_trans_time;
+	double mel_energy;
+	double cos_trans_energy;
+
+	FeatStatistics() :
+		mel_time(0.0),
+		cos_trans_time(0.0),
+		mel_energy(0.0),
+		cos_trans_energy(0.0) {}
+
+	FeatStatistics &operator=(const FeatStatistics &other) {
+		mel_time = other.mel_time;
+		mel_energy = other.mel_energy;
+		cos_trans_time = other.cos_trans_time;
+		cos_trans_energy = other.cos_trans_energy;
+    return *this;
+	}
+};
+
 /// This templated class is intended for offline feature extraction, i.e. where
 /// you have access to the entire signal at the start.  It exists mainly to be
 /// drop-in replacement for the old (pre-2016) classes Mfcc, Plp and so on, for
@@ -116,7 +138,12 @@ class OfflineFeatureTpl {
   // using the options class, that we cache at this level.
   OfflineFeatureTpl(const Options &opts):
       computer_(opts),
+			_stats(),
       feature_window_function_(computer_.GetFrameOptions()) { }
+
+	void GetStatistics(FeatStatistics &stats) {
+		stats = _stats;
+	}
 
   // Internal (and back-compatibility) interface for computing features, which
   // requires that the user has already checked that the sampling frequency
@@ -172,6 +199,8 @@ class OfflineFeatureTpl {
   private:
   // Disallow assignment.
   OfflineFeatureTpl<F> &operator =(const OfflineFeatureTpl<F> &other);
+
+	FeatStatistics _stats;
 
   F computer_;
   FeatureWindowFunction feature_window_function_;

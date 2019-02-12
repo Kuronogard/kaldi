@@ -1,3 +1,6 @@
+#ifndef __RESOURCE_MONITOR_ARM
+#define __RESOURCE_MONITOR_ARM
+
 #include <stdlib.h>
 #include <pthread.h>
 #include <vector>
@@ -18,6 +21,9 @@ public:
 
 	void startMonitoring(double seconds);
 	void endMonitoring();
+
+	void startMonitoringNoThread();
+	void endMonitoringNoThread();
 	
 	void init();
 
@@ -30,7 +36,10 @@ public:
 	void getPowerCPU(vector<double> &timestamp, vector<double> &power);
 	void getPowerGPU(vector<double> &timestamp, vector<double> &power);
 	void getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU);
+
+	int numData();
 	bool hasData();
+
 
 private:
 
@@ -38,6 +47,7 @@ private:
 
 	bool initialized;
 	bool running;
+	bool runningNoThread;
 	pthread_mutex_t lock;
 	bool end_monitoring;
 	pthread_t monitor_thread;
@@ -63,3 +73,6 @@ private:
 	double interval_CPU_power_est(int i, double prev_power);
 	double timeval2double(struct timeval time);
 };
+
+
+#endif /* __RESOURCE_MONITOR_ARM*/

@@ -39,13 +39,17 @@ int main(int argc, char **argv) {
 
 	std::string symbol_table = "";
 	std::string time_log = "";
+	std::string profile = "";
 	std::string use_gpu = "yes";
 	BaseFloat acoustic_scale = 0.1;
+	double measure_period = 0.1;
 
+	po.Register("measure_period", &measure_period, "Time (seconds) between energy measurements.");
 	po.Register("use-gpu", &use_gpu, "Use gpu when possible (yes|no) (default: yes)");
 	po.Register("acoustic-scale", &acoustic_scale, "This should be the acoustic scale used to compute the acoustic probabilities.");
 	po.Register("symbol-table", &symbol_table, "Symbol table. If provided, the transcriptions will be shown on standard output");
 	po.Register("time-log", &time_log, "File to store time measurements");
+	po.Register("profile", &profile, "File to store the complete profile. time, power and energy.");
 	config.Register(&po);
 
 	po.Read(argc, argv);
@@ -120,6 +124,20 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	std::ofstream profile_o;
+	if (profile != "") {
+		profile_o.open(profile);
+		if (!profile_o.is_open()) {
+			KALDI_ERR << "Could not open profile file " << profile;
+		}
+		else {
+			profile_o << "Utterance, frames, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J)";
+			profile_o << ", energy GPU (J), num values" << std::endl;
+		}
+
+	}
+
+	resourceMonitor.init();	
 
 	kaldi::int64 frame_count = 0;
 	int32 num_success = 0, num_fail = 0;
@@ -129,7 +147,6 @@ int main(int argc, char **argv) {
 		std::string utt = posteriors_reader.Key();
 		const Matrix<BaseFloat> &posteriors(posteriors_reader.Value());
 
-		double decode_elapsed;
 		//----------------------------------------------------------
 		//   Decode
 		//----------------------------------------------------------
@@ -145,14 +162,17 @@ int main(int argc, char **argv) {
 		DecodableAmNnetSimpleWithIO nnet_decodable(trans_model);
 		nnet_decodable.ReadProbsFromMatrix(posteriors);
 
-		decode_timer.Reset();
+		//decode_timer.Reset();
+		resourceMonitor.startMonitoring(measure_period);
 		if (!decoder.Decode(&nnet_decodable)) {
+			resourceMonitor.endMonitoring();
 			std::cout << "[WARN." << utt << "]: Failed to decode" << std::endl;
 			num_fail++;
 			continue;
 		}
 		
-		decode_elapsed = decode_timer.Elapsed();
+		resourceMonitor.endMonitoring();
+		//decode_elapsed = decode_timer.Elapsed();
 
 		if (!decoder.ReachedFinal()) {
 			std::cout << "[WARN. " << utt << "]: No final state reached" << std::endl;
@@ -223,9 +243,27 @@ int main(int argc, char **argv) {
 
 
 		if (time_o.is_open()) {
+			double decode_elapsed = resourceMonitor.getTotalExecTime();
 			time_o << utt << ", " << decode_elapsed;
 			time_o << std::endl;
 		}
+
+		if (profile_o.is_open()) {
+			double elapsed = resourceMonitor.getTotalExecTime();
+			double cpuPower = resourceMonitor.getAveragePowerCPU();
+			double gpuPower = resourceMonitor.getAveragePowerGPU();
+			double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+			double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+			int numValues = resourceMonitor.numData();
+
+			if (numValues < 20) {
+				cerr << "WARN: less than 20 values measured (" << numValues << ")" << endl;
+			}
+
+			profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", ";
+			profile_o << cpuEnergy << ", " << gpuEnergy << ", " << numValues << endl;
+		}
+
 
 	}
 
@@ -233,7 +271,9 @@ int main(int argc, char **argv) {
 
 
 	delete word_symbols;
-	time_o.close();
+	
+	if (time_o.is_open()) time_o.close();
+	if (profile_o.is_open()) profile_o.close();
 
 	return 0;
 }

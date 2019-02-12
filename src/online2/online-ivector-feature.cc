@@ -18,6 +18,8 @@
 // limitations under the License.
 
 #include "online2/online-ivector-feature.h"
+#include "base/timer.h"
+#include "standalonebin/resource_monitor_ARM.h" 
 
 namespace kaldi {
 
@@ -179,17 +181,62 @@ void OnlineIvectorFeature::UpdateStatsForFrame(int32 t,
   int32 feat_dim = lda_normalized_->Dim();
   Vector<BaseFloat> feat(feat_dim),  // features given to iVector extractor
       log_likes(info_.diag_ubm.NumGauss());
+	Timer time;
+/**************************************
+			ACCEL
+***************************************/
+//	resourceMonitor.startMonitoringNoThread();
+	time.Reset();
+
+	// LDA*feat + offset
   lda_normalized_->GetFrame(t, &feat);
+
+	// loglikes = g_const + M1*feat
+	// loglikes += -0.5*M2*(feat^2)
   info_.diag_ubm.LogLikelihoods(feat, &log_likes);
+
+	// LDA*FEAT + OFFSET
+  lda_->GetFrame(t, &feat); // get feature without CMN.
+	
+	statistics_.accelTime += time.Elapsed();
+//	resourceMonitor.endMonitoringNoThread();
+//	statistics_.accelTime += resourceMonitor.getTotalExecTime();
+//	statistics_.accelEnergyCPU += resourceMonitor.getTotalEnergyCPU();
+//	statistics_.accelEnergyGPU += resourceMonitor.getTotalEnergyGPU();
+/**************************************
+			END ACCEL
+***************************************/
+
+//	resourceMonitor.startMonitoringNoThread();
+	time.Reset();
   // "posterior" stores the pruned posteriors for Gaussians in the UBM.
   std::vector<std::pair<int32, BaseFloat> > posterior;
+
   tot_ubm_loglike_ += weight *
       VectorToPosteriorEntry(log_likes, info_.num_gselect,
                              info_.min_post, &posterior);
+
   for (size_t i = 0; i < posterior.size(); i++)
     posterior[i].second *= info_.posterior_scale * weight;
-  lda_->GetFrame(t, &feat); // get feature without CMN.
+	
+	statistics_.noAccelTime += time.Elapsed();
+//	resourceMonitor.endMonitoringNoThread();
+//	statistics_.noAccelTime += resourceMonitor.getTotalExecTime();
+//	statistics_.noAccelEnergyCPU += resourceMonitor.getTotalEnergyCPU();
+//	statistics_.noAccelEnergyGPU += resourceMonitor.getTotalEnergyGPU();
+
+/**************************************
+			ACCEL
+***************************************/
+	IvectorStatistics accStats;
+	ivector_stats_.ResetStatistics();
   ivector_stats_.AccStats(info_.extractor, feat, posterior);
+	ivector_stats_.GetStatistics(accStats);
+	statistics_ += accStats;
+/**************************************
+			END ACCEL
+***************************************/
+
 }
 
 void OnlineIvectorFeature::UpdateStatsUntilFrame(int32 frame) {
@@ -334,13 +381,14 @@ void OnlineIvectorFeature::GetAdaptationState(
 OnlineIvectorFeature::OnlineIvectorFeature(
     const OnlineIvectorExtractionInfo &info,
     OnlineFeatureInterface *base_feature):
-    info_(info), base_(base_feature),
+    resourceMonitor(), info_(info), base_(base_feature),
     ivector_stats_(info_.extractor.IvectorDim(),
                    info_.extractor.PriorOffset(),
                    info_.max_count),
     num_frames_stats_(0), delta_weights_provided_(false),
     updated_with_no_delta_weights_(false),
     most_recent_frame_with_weight_(-1), tot_ubm_loglike_(0.0) {
+	resourceMonitor.init();
   info.Check();
   KALDI_ASSERT(base_feature != NULL);
   splice_ = new OnlineSpliceFrames(info_.splice_opts, base_);

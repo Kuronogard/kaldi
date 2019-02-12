@@ -32,8 +32,9 @@ int main(int argc, char **argv) {
 		int32 online_ivector_period = 10;
 		std::string use_gpu = "yes";
 		std::string time_log = "";
-		std::string energy_log = "";
+		std::string power_log = "";
 		std::string profile = "";
+		double measure_period = 0.1;
 
 		//Timer timer;
 		ResourceMonitorARM resourceMonitor;
@@ -43,7 +44,8 @@ int main(int argc, char **argv) {
 
 		po.Register("use-gpu", &use_gpu, "Use GPU when possible (yes|no) (default:yes).");
 		po.Register("time-log", &time_log, "File to store time logs.");
-		po.Register("energy-log", &energy_log, "File to store snergy logs.");
+		po.Register("measure-period", &measure_period, "Time (seconds) between energy measurements.");
+		po.Register("power-log", &power_log, "File to store power history.");
 		po.Register("profile", &profile, "File to store profile information, such as execution time and energy consumption. This file contains a sumary of all the different logs.");
 
 		decodable_opts.Register(&po);
@@ -71,13 +73,12 @@ int main(int argc, char **argv) {
 		}
 
 
-		std::ofstream energy_o;
-		if (energy_log != "") {
-			energy_o.open(energy_log);
-			if (!energy_o.is_open()) {
-				KALDI_ERR << "Could not open energy log file " << energy_log;
+		std::ofstream power_o;
+		if (power_log != "") {
+			power_o.open(power_log);
+			if (!power_o.is_open()) {
+				KALDI_ERR << "Could not open power log file " << power_log;
 			}
-			energy_o << "utterance, energy (mJ)" << std::endl;
 		}
 
 
@@ -88,8 +89,8 @@ int main(int argc, char **argv) {
 				KALDI_ERR << "Could not open profile file " << profile;
 			}
 			profile_o << "utterance, frames, time (s) ";
-			profile_o << ", avg power CPU (mW), avg power GPU (mW) ";
-			profile_o << ", energy CPU (mJ), energy GPU (mJ)" << std::endl;
+			profile_o << ", avg power CPU (W), avg power GPU (W) ";
+			profile_o << ", energy CPU (J), energy GPU (J), num values" << std::endl;
 		}
 
 
@@ -136,34 +137,45 @@ int main(int argc, char **argv) {
 
 			
 			//timer.Reset();
-			resourceMonitor.startMonitoring(0.5);
+			resourceMonitor.startMonitoring(measure_period);
 			nnet_decodable.ComputeFromModel(decodable_opts, am_nnet, features, 
 								&online_ivectors, online_ivector_period, &compiler);
 			resourceMonitor.endMonitoring();
 			//double elapsed = timer.Elapsed();
 
 			// Extract measurements and log them if required
-			double elapsed = resourceMonitor.getTotalExecTime();
-			double avgPowerCPU = resourceMonitor.getAveragePowerCPU();
-			double avgPowerGPU = resourceMonitor.getAveragePowerGPU();
-			double energyCPU = resourceMonitor.getTotalEnergyCPU();
-			double energyGPU = resourceMonitor.getTotalEnergyGPU();
 
 			// Store utterance name, elapsed time
 
 			if (time_o.is_open()) {
+				double elapsed = resourceMonitor.getTotalExecTime();
 				time_o << utt << ", " << features.NumRows() << ", " << elapsed << std::endl;
 			}
 
-			if (energy_o.is_open()) {
-				energy_o << utt << ", " << energyCPU + energyGPU << std::endl;
+			if (power_o.is_open()) {
+				vector<double> timeHist, cpuPowerHist, gpuPowerHist;
+				resourceMonitor.getPower(timeHist, cpuPowerHist, gpuPowerHist);
+				power_o << utt << ", ";
+				for (int i = 0; i < timeHist.size(); i++) { 
+					power_o << "(" << timeHist[i] << "," << cpuPowerHist[i] << "," << gpuPowerHist[i] << ")" << ", ";
+				}
+				power_o << std::endl;
 			}
 
 			if (profile_o.is_open()) {
+				double elapsed = resourceMonitor.getTotalExecTime();
+				double avgPowerCPU = resourceMonitor.getAveragePowerCPU();
+				double avgPowerGPU = resourceMonitor.getAveragePowerGPU();
+				double energyCPU = resourceMonitor.getTotalEnergyCPU();
+				double energyGPU = resourceMonitor.getTotalEnergyGPU();
+				int numValues = resourceMonitor.numData();
+
+				if (numValues < 20) cerr << "WARN: Less than 20 energy measurements" << endl;
+
 				profile_o << utt << ", " << features.NumRows() << ", " << elapsed;
 				profile_o << ", " << avgPowerCPU << ", " << avgPowerGPU;
 				profile_o << ", " << energyCPU << ", " << energyGPU;
-				profile_o << std::endl;
+				profile_o << ", " << numValues << std::endl;
 			}
 		
 			posterior_writer.Write(utt, nnet_decodable.GetLogProbs());
@@ -176,7 +188,7 @@ int main(int argc, char **argv) {
 		std::cout << "Total frames is " << frame_count << " for " << utt_count << " utterances." << std::endl;
 
 		if (time_o.is_open()) time_o.close();
-		if (energy_o.is_open()) energy_o.close();
+		if (power_o.is_open()) power_o.close();
 		if (profile_o.is_open()) profile_o.close();
 
 		return 0;

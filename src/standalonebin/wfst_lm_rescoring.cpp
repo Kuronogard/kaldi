@@ -11,6 +11,7 @@
 #include "lm/const-arpa-lm.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 int main(int argc, char **argv) {
 
@@ -39,9 +40,11 @@ int main(int argc, char **argv) {
 	BaseFloat word_ins_penalty = 0.0;
 	std::string symbol_table = "";
 	std::string time_log = "";
+	std::string profile = "";
 	std::string use_gpu = "yes";
 
 	int32 num_states_cache = 50000;
+	double measure_period = 0.1;
 
 
 	po.Register("use-gpu", &use_gpu, "Use gpu when possible (yes|no) (default: yes)");
@@ -51,6 +54,8 @@ int main(int argc, char **argv) {
 	po.Register("word-ins-penalty", &word_ins_penalty, "Word Insertion Penalty. This value is added to the graph weight of every arc in the lattice acceptor with a word label (those with no empty labels)");
 	po.Register("symbol-table", &symbol_table, "Symbol table. if provided, the transcriptions will be shown on standart output");
 	po.Register("time-log", &time_log, "File to store time measurements");
+	po.Register("profile", &profile, "File to store time, energy nd power.");
+	po.Register("measure-period", &measure_period, "Time (seconds) between energy measurements.");
 
 	po.Read(argc, argv);
 
@@ -72,8 +77,9 @@ int main(int argc, char **argv) {
 
 
 
-	Timer rescore_timer;
-	
+	//Timer rescore_timer;
+	ResourceMonitorARM resourceMonitor;
+	resourceMonitor.init();
 
   // read old WFST LM (ARPA)
 	VectorFst<StdArc> *std_old_LM;
@@ -125,6 +131,17 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	std::ofstream profile_o;
+	if ( profile != "" ) {
+		profile_o.open(profile);
+		if ( !profile_o.is_open() ) {
+			KALDI_WARN << "Could not open profile log file " << profile;
+		} 
+		else {
+			profile_o << "Utterance, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J), energy GPU (J)";
+			profile_o << ", num values" << std::endl;
+		}
+	}
 
 	int32 num_success = 0, num_fail = 0;
 
@@ -135,7 +152,7 @@ int main(int argc, char **argv) {
 		
 		std::cout << "Starting LM rescore for " << utt << std::endl;
 
-		rescore_timer.Reset();		
+		//rescore_timer.Reset();		
 
 		// ---------------------------------------------------
 		//		Remove old LM weights
@@ -147,8 +164,9 @@ int main(int argc, char **argv) {
 		// Escalar lattice -1
 
 
-		std::cout << "Remove old weights" << std::endl;
-
+		//std::cout << "Remove old weights" << std::endl;
+		
+		resourceMonitor.startMonitoring(measure_period);
 		fst::ScaleLattice(fst::GraphLatticeScale(-1.0/rescore_lm_scale), &lat);
 
 		//KALDI_WARN << "old_LM arcs " << old_LM.NumArcs(1);
@@ -162,6 +180,7 @@ int main(int argc, char **argv) {
 		//TableCompose(lat, old_LM, &lat_nolm, &lm_compose_cache);
 		Compose(lat, old_LM, &lat_nolm);
 		if ( lat_nolm.Start() == fst::kNoStateId ) {
+			resourceMonitor.endMonitoring();
 			std::cout << "[WARN." << utt << "]: Unscored lattice is empty." << std::endl;
 			num_fail++;
       continue;
@@ -184,35 +203,37 @@ int main(int argc, char **argv) {
 		// Determinizar lattice
 		// Escalar por lm_scale
 
-		std::cout << "Add new weights" << std::endl;
+		//std::cout << "Add new weights" << std::endl;
 
 		ArcSort(&clat_nolm_determinized, fst::OLabelCompare<CompactLatticeArc>());
 		ConstArpaLmDeterministicFst new_LM_wrapped(new_LM);
 
-		std::cout << "Compose with LM" << std::endl;
+		//std::cout << "Compose with LM" << std::endl;
 		CompactLattice clat_rescored;
 		ComposeCompactLatticeDeterministic(clat_nolm_determinized, &new_LM_wrapped, &clat_rescored);
 		if (clat_rescored.Start() == fst::kNoStateId) {
+			resourceMonitor.endMonitoring();
 			std::cout << "[WARN." << utt << "]: Rescored lattice is empty." << std::endl;
 			num_fail++;
 			continue;
 		}
 
 
-		std::cout << "Convert to normal lattice and invert" << std::endl;
+		//std::cout << "Convert to normal lattice and invert" << std::endl;
 		Lattice lat_rescored;
 		ConvertLattice(clat_rescored, &lat_rescored);
 		Invert(&lat_rescored);
 
-		std::cout << "Determinize lattice" << std::endl;
+		//std::cout << "Determinize lattice" << std::endl;
 		CompactLattice clat_rescored_determinized;
 		DeterminizeLattice(lat_rescored, &clat_rescored_determinized);
 
 
-		std::cout << "Scale lattice" << std::endl;
+		//std::cout << "Scale lattice" << std::endl;
 		fst::ScaleLattice(fst::GraphLatticeScale(rescore_lm_scale), &clat_rescored_determinized);
 
-		double rescore_elapsed = rescore_timer.Elapsed();
+		resourceMonitor.endMonitoring();
+		//double rescore_elapsed = rescore_timer.Elapsed();
 
 		// ---------------------------------------------------
 		//		Compute Best Path
@@ -221,7 +242,7 @@ int main(int argc, char **argv) {
 		// Sumar penalty (lattice-add-penalty --word-ins-penalty=0.0, 0.5, 1.0)
 		// Calcular best path (lattice-best-path)
 	
-		std::cout << "Compute best path" << std::endl;
+		//std::cout << "Compute best path" << std::endl;
 
 		std::vector<std::vector<double> > scale(2);
 		scale[0].resize(2);
@@ -267,9 +288,23 @@ int main(int argc, char **argv) {
 
 		// write elapsed
 		if ( time_o.is_open() ) {
+			double rescore_elapsed = resourceMonitor.getTotalExecTime();
 			time_o << utt << ", " << rescore_elapsed;
 			time_o << std::endl;
 		}
+
+		if (profile_o.is_open()) {
+			double elapsed = resourceMonitor.getTotalExecTime();
+			double cpuPower = resourceMonitor.getAveragePowerCPU();
+			double gpuPower = resourceMonitor.getAveragePowerGPU();
+			double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+			double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+			int numValues = resourceMonitor.numData();
+	
+			profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
+			profile_o << ", " << gpuEnergy << ", " << numValues << endl;
+		}
+
 
 		// If no word_symbol available, skip this part
 		if ( word_symbols != 0 ) {
@@ -288,7 +323,8 @@ int main(int argc, char **argv) {
 
 
 	delete word_symbols;
-	time_o.close();
+	if (time_o.is_open()) time_o.close();
+	if (profile_o.is_open()) profile_o.close();		
 
 	return 0;
 }

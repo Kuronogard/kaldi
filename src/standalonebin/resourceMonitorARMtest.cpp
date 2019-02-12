@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 	monitor.init();
 
 	cerr << "Start monitoring" << endl;
-	monitor.startMonitoring(0.5);
+	monitor.startMonitoring(0.1);
 	cerr << "Start sleep 5" << endl;
 	sleep(5);
 	cerr << "End sleep" << endl;
@@ -42,13 +42,13 @@ int main(int argc, char **argv) {
 	cout << "interval time (s), cpu power (W), gpu power (W)" << endl;
 	cout << "--------------------------------------------------------" << endl;
 	for ( int i = 0; i < timestamp.size(); i++) {
-		cout << setw(15) << timestamp[i] << ", " << setw(12) << gpuPowerReading[i] << ", " << setw(12) << gpuPowerReading[i];
+		cout << setw(15) << timestamp[i] << ", " << setw(12) << cpuPowerReading[i] << ", " << setw(12) << gpuPowerReading[i];
 		cout << endl;
 	} 
 	cout << endl;
 
 
-	cout << "  time (s), cpu energy (J), cpu power (J), gpu energy (W), gpu power (W)" << endl;
+	cout << "  time (s), cpu energy (J), cpu power (W), gpu energy (J), gpu power (W)" << endl;
 	cout << "--------------------------------------------------------" << endl;
 	cout << setw(11) << execTime << ", " << setw(11) << cpuEnergy;
 	cout << ", " << setw(11) << cpuPower << ", " << setw(11) << gpuEnergy;

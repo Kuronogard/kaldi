@@ -6,6 +6,10 @@
 #include <unistd.h>
 
 
+int ResourceMonitorARM::numData() {
+	return _timestamp.size();
+}
+
 bool ResourceMonitorARM::hasData() {
 	return _timestamp.size() > 0;
 }
@@ -23,6 +27,7 @@ double ResourceMonitorARM::interval_CPU_power(int i) {
 
 ResourceMonitorARM::ResourceMonitorARM() {
 	running = false;
+	runningNoThread = false;
 	initialized = false;
 	pthread_mutex_init(&lock, NULL);
 }
@@ -39,7 +44,7 @@ ResourceMonitorARM::~ResourceMonitorARM() {
  */
 void ResourceMonitorARM::init() {
 
-	if (running) {
+	if (initialized) {
 		cerr << "WARN: Tried to reinitialize resorce monitor. " << endl;
 		cerr << "Doing nothing..." << endl;
 		return;
@@ -55,6 +60,46 @@ void ResourceMonitorARM::init() {
 }
 
 
+void ResourceMonitorARM::startMonitoringNoThread() {
+
+	if (running) {
+		cerr << "WARN: Resource Monitor is already running (in Thread mode)." << endl;
+		cerr << "Doing Nothing..." << endl;
+		return;
+	}
+
+	if (runningNoThread) {
+		cerr << "WARN: Resource Monitor is already running." << endl;
+		cerr << "Doing Nothing..." << endl;
+		return;
+	}
+
+	_timestamp.clear();
+	_powerCPU.clear();
+	_powerGPU.clear();
+
+	runningNoThread = true;
+
+	gettimeofday(&_startTime, NULL);
+
+	timeval timestamp;
+	double cpuPower, gpuPower;
+
+	// Check time
+	gettimeofday(&timestamp, NULL);		
+
+	// Check CPU power
+	cpuPower = probeARM.fetchPowerCPU();
+
+	// Check GPU power
+	gpuPower = probeARM.fetchPowerGPU();
+
+	_timestamp.push_back(timestamp);
+	_powerCPU.push_back(cpuPower);
+	_powerGPU.push_back(gpuPower);
+}
+
+
 void ResourceMonitorARM::startMonitoring(double seconds) {
 	
 	if (running) {
@@ -63,14 +108,47 @@ void ResourceMonitorARM::startMonitoring(double seconds) {
 		return;
 	}
 
+	_timestamp.clear();
+	_powerCPU.clear();
+	_powerGPU.clear();
+
 	measure_period = seconds * 1000000;
 	setEndMonitor(false);
 	running = true;
 
-	gettimeofday(&_startTime, &_timeZone);
+	gettimeofday(&_startTime, NULL);
 	pthread_create(&monitor_thread, NULL, &background_monitor_handler, (void*)this);
 }
 
+
+void ResourceMonitorARM::endMonitoringNoThread() {
+
+	if (!runningNoThread) {
+		cerr << "WARN: Tried to end monitoring, but it was not running" << endl;
+		cerr << "Doing Nothing" << endl;
+		return;
+	}
+
+	gettimeofday(&_endTime, NULL);
+
+	timeval timestamp;
+	double cpuPower, gpuPower;
+
+	// Check time
+	gettimeofday(&timestamp, NULL);		
+
+	// Check CPU power
+	cpuPower = probeARM.fetchPowerCPU();
+
+	// Check GPU power
+	gpuPower = probeARM.fetchPowerGPU();
+
+	_timestamp.push_back(timestamp);
+	_powerCPU.push_back(cpuPower);
+	_powerGPU.push_back(gpuPower);
+
+	runningNoThread = false;
+}
 
 void ResourceMonitorARM::endMonitoring() {
 
@@ -80,7 +158,7 @@ void ResourceMonitorARM::endMonitoring() {
 		return;
 	}
 
-	gettimeofday(&_endTime, &_timeZone);
+	gettimeofday(&_endTime, NULL);
 	setEndMonitor(true);
 
 	pthread_join(monitor_thread, NULL);
@@ -264,8 +342,6 @@ void * ResourceMonitorARM::background_monitor_handler(void * arg) {
 		timeval timestamp;
 		double cpuPower, gpuPower;
 
-		cerr << "Measuring" << endl;
-
 		// Check time
 		gettimeofday(&timestamp, NULL);		
 
@@ -281,6 +357,14 @@ void * ResourceMonitorARM::background_monitor_handler(void * arg) {
 
 		usleep(wait_time);
 	}
+
+	// Last measurement to garantee that all the
+	//gettimeofday(&timestamp, NULL);
+	//cpuPower = parent->probeARM.fetchPowerCPU();
+	//gpuPower = parent->probeARM.fetchPowerGPU();
+	//parent->_timestamp.push_back(timestamp);
+	//parent->_powerCPU.push_back(cpuPower);
+	//parent->_powerGPU.push_bak(gpuPower);
 
 	pthread_exit(NULL);
 }

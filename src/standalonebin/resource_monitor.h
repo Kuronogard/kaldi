@@ -1,3 +1,6 @@
+#ifndef __RESOURCE_MONITOR
+#define __RESOURCE_MONITOR
+
 #include <stdlib.h>
 #include <pthread.h>
 #include <vector>
@@ -62,3 +65,5 @@ private:
 	double interval_CPU_power_est(int i, double prev_power);
 	double timeval2double(struct timeval time);
 };
+
+#endif /*__RESOURCE_MONITOR */

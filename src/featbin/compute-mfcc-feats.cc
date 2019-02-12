@@ -27,6 +27,7 @@
 #include "util/common-utils.h"
 #include "feat/feature-mfcc.h"
 #include "feat/wave-reader.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 int main(int argc, char *argv[]) {
   try {
@@ -42,6 +43,7 @@ int main(int argc, char *argv[]) {
     BaseFloat vtln_warp = 1.0;
     std::string vtln_map_rspecifier;
     std::string utt2spk_rspecifier;
+		double measure_period = 0.1;
     int32 channel = -1;
     BaseFloat min_duration = 0.0;
     // Define defaults for gobal options
@@ -52,6 +54,7 @@ int main(int argc, char *argv[]) {
     mfcc_opts.Register(&po);
 
     // Register the options
+		po.Register("measure-period", &measure_period, "Time (seconds) between energy measurements.");
     po.Register("output-format", &output_format, "Format of the output "
                 "files [kaldi, htk]");
     po.Register("subtract-mean", &subtract_mean, "Subtract mean of each "
@@ -79,8 +82,8 @@ int main(int argc, char *argv[]) {
     std::string output_wspecifier = po.GetArg(2);
 
 		std::string time_log_filename = po.GetArg(3);
-
-
+		ResourceMonitorARM resourceMonitor;
+		resourceMonitor.init();
 		
 
     Mfcc mfcc(mfcc_opts);
@@ -109,7 +112,7 @@ int main(int argc, char *argv[]) {
 
 
 		std::ofstream time_o(time_log_filename);
-		time_o << "Utterance, frames, time (s)" << std::endl;
+		time_o << "Utterance, frames, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J), energy GPU (J), num values" << std::endl;
 
     int32 num_utts = 0, num_success = 0;
     for (; !reader.Done(); reader.Next()) {
@@ -154,13 +157,15 @@ int main(int argc, char *argv[]) {
       SubVector<BaseFloat> waveform(wave_data.Data(), this_chan);
       Matrix<BaseFloat> features;
 
-			feat_timer.Reset();
+			//feat_timer.Reset();
+			resourceMonitor.startMonitoring(measure_period);
       try {
         mfcc.ComputeFeatures(waveform, wave_data.SampFreq(), vtln_warp_local, &features);
       } catch (...) {
+				resourceMonitor.endMonitoring();
         KALDI_WARN << "Failed to compute features for utterance "
                    << utt;
-				time_o << utt << "_FAILLURE, 0, 0" << std::endl;
+				time_o << utt << "_FAILLURE, 0, 0, 0, 0, 0, 0" << std::endl;
         continue;
       }
       if (subtract_mean) {
@@ -170,8 +175,20 @@ int main(int argc, char *argv[]) {
         for (int32 i = 0; i < features.NumRows(); i++)
           features.Row(i).AddVec(-1.0, mean);
       }
-			double feat_elapsed = feat_timer.Elapsed();		
-			time_o << utt << ", " << features.NumRows() << ", " << feat_elapsed << std::endl;
+			//double feat_elapsed = feat_timer.Elapsed();		
+			resourceMonitor.endMonitoring();
+
+			double cpuPower = resourceMonitor.getAveragePowerCPU();
+			double gpuPower = resourceMonitor.getAveragePowerGPU();
+			double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+			double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+			double feat_elapsed = resourceMonitor.getTotalExecTime();
+			int numValues = resourceMonitor.numData();
+	
+			if (numValues < 20) KALDI_WARN << "Less than 20 energy measures (" << numValues << ")";
+
+			time_o << utt << ", " << features.NumRows() << ", " << feat_elapsed << ", " << cpuPower << ", ";
+			time_o << gpuPower << ", " << cpuEnergy << ", " << gpuEnergy << ", " << numValues << std::endl;
 
       if (output_format == "kaldi") {
         kaldi_writer.Write(utt, features);

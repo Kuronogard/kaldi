@@ -33,6 +33,7 @@
 #include "feat/online-feature.h"
 #include "ivector/ivector-extractor.h"
 #include "decoder/lattice-faster-online-decoder.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 namespace kaldi {
 /// @addtogroup  onlinefeat OnlineFeatureExtraction
@@ -232,8 +233,6 @@ struct OnlineIvectorExtractorAdaptationState {
 };
 
 
-
-
 /// OnlineIvectorFeature is an online feature-extraction class that's responsible
 /// for extracting iVectors from raw features such as MFCC, PLP or filterbank.
 /// Internally it processes the raw features using two different pipelines, one
@@ -261,6 +260,10 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
 
 
   // Member functions from OnlineFeatureInterface:
+
+	void GetStatistics(IvectorStatistics &stats) {
+		stats = statistics_;
+	}
 
   /// Dim() will return the iVector dimension.
   virtual int32 Dim() const;
@@ -311,6 +314,10 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
       const std::vector<std::pair<int32, BaseFloat> > &delta_weights);
 
  private:
+	IvectorStatistics statistics_;
+
+	ResourceMonitorARM resourceMonitor;
+
   // this function adds "weight" to the stats for frame "frame".
   void UpdateStatsForFrame(int32 frame,
                            BaseFloat weight);

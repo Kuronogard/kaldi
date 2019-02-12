@@ -27,6 +27,7 @@
 #include "gmm/am-diag-gmm.h"
 #include "online2/online-ivector-feature.h"
 #include "util/kaldi-thread.h"
+#include "standalonebin/resource_monitor_ARM.h"
 
 int main(int argc, char *argv[]) {
   using namespace kaldi;
@@ -61,7 +62,9 @@ int main(int argc, char *argv[]) {
     bool repeat = false;
     int32 length_tolerance = 0;
     std::string frame_weights_rspecifier;
-    
+		double measure_period = 0.1;
+
+		po.Register("measure-period", &measure_period, "Time (seconds) between energy measurements.");    
     po.Register("num-threads", &g_num_threads,
                 "Number of threads to use for computing derived variables "
                 "of iVector extractor, at process start-up.");
@@ -86,7 +89,9 @@ int main(int argc, char *argv[]) {
         ivectors_wspecifier = po.GetArg(3),
 				time_log_filename = po.GetArg(4);    
 
-		Timer feat_timer;
+		//Timer feat_timer;
+		ResourceMonitorARM resourceMonitor;
+		resourceMonitor.init();
 
 		std::ofstream time_o(time_log_filename);
 
@@ -103,7 +108,7 @@ int main(int argc, char *argv[]) {
     BaseFloatMatrixWriter ivector_writer(ivectors_wspecifier);
     
 
-		time_o << "Utterance, Frames, Time (s)" << std::endl;
+		time_o << "Utterance, frames, numAccStats, Global Time (s), Global Energy (J), noAccel Time (s), accel Time (s)" << std::endl;
     
     for (; !spk2utt_reader.Done(); spk2utt_reader.Next()) {
       std::string spk = spk2utt_reader.Key();
@@ -121,7 +126,8 @@ int main(int argc, char *argv[]) {
         
         OnlineMatrixFeature matrix_feature(feats);
 
-				feat_timer.Reset();
+				//feat_timer.Reset();
+				resourceMonitor.startMonitoring(measure_period);				
 
         OnlineIvectorFeature ivector_feature(ivector_info,
                                              &matrix_feature);
@@ -166,9 +172,30 @@ int main(int argc, char *argv[]) {
           ivector_feature.GetFrame(t, &ivector);
         }
 
-				double elapsed = feat_timer.Elapsed();
-				time_o << utt << ", " << feats.NumRows() << ", " << elapsed << std::endl;
+				//IvectorStatistics stats;
+				//ivector_feature.GetStatistics(stats);
+
+				//double elapsed = feat_timer.Elapsed();
+				resourceMonitor.endMonitoring();				
+				double elapsed = resourceMonitor.getTotalExecTime();
+				double cpuPower = resourceMonitor.getAveragePowerCPU();
+				double gpuPower = resourceMonitor.getAveragePowerGPU();
+				double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+				double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+				int numValues = resourceMonitor.numData();
+	
+				if (numValues < 20) KALDI_WARN << "Less than 20 measures (" << numValues << ")";
+				IvectorStatistics stats;
+				ivector_feature.GetStatistics(stats);
+
         // Update diagnostics.
+				time_o << utt << ", " << feats.NumRows() << ", " << stats.numAccStats << ", " << elapsed;
+				time_o << ", " << cpuEnergy << ", " << stats.noAccelTime << ", " << stats.accelTime;
+				time_o << std::endl;
+
+				// time_o << "Utterance, frames, numAccStats, Exec Time noAccel (s), Energy noAccel (J), Time accel (s), Energy accel (J), exec time Global (s), energy global CPU (J), energy Global GPU (J)" << std::endl;
+    
+
 
         tot_ubm_loglike += T * ivector_feature.UbmLogLikePerFrame();
         tot_objf_impr += T * ivector_feature.ObjfImprPerFrame();
