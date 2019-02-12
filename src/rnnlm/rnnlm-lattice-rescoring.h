@@ -29,7 +29,7 @@
 #include "fstext/deterministic-fst.h"
 #include "rnnlm/rnnlm-compute-state.h"
 #include "util/common-utils.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
 namespace rnnlm {
@@ -77,7 +77,7 @@ class KaldiRnnlmDeterministicFst
   // The pointers are owned in this class
   std::vector<RnnlmComputeState*> state_to_rnnlm_state_;
 
-	ResourceMonitorARM resourceMonitor;
+	ResourceMonitor resourceMonitor;
 
 	double accum_exec_time_;
 	double accum_energy_;

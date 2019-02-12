@@ -3341,6 +3341,7 @@ void FixedAffineComponent::Init(const CuMatrixBase<BaseFloat> &mat) {
 }
 
 void FixedAffineComponent::InitFromConfig(ConfigLine *cfl) {
+	std::cerr << "FixedAffineComponent init from config" << std::endl;
   std::string filename;
   // Two forms allowed: "matrix=<rxfilename>", or "input-dim=x output-dim=y"
   // (for testing purposes only).
@@ -3366,6 +3367,7 @@ void FixedAffineComponent::InitFromConfig(ConfigLine *cfl) {
     mat.SetRandn();
     Init(mat);
   }
+	std::cerr << "Salid de FixedAffine initfromconfig" << std::endl;
 }
 
 

@@ -63,5 +63,8 @@ MKL_DYN_MUL = -L$(MKLLIB) -lmkl_solver_lp64 -Wl,--start-group -lmkl_intel_lp64 \
 
 # MKLFLAGS = $(MKL_DYN_MUL)
 
-LDFLAGS = $(EXTRA_LDFLAGS) $(OPENFSTLDFLAGS) -rdynamic
-LDLIBS = $(EXTRA_LDLIBS) $(OPENFSTLIBS) $(MKLFLAGS) -lm -lpthread -ldl
+NVIDIA_LDFLAGS = -L/usr/lib/nvidia-375
+NVIDIA_LIBS = -lnvidia-ml
+
+LDFLAGS = $(EXTRA_LDFLAGS) $(OPENFSTLDFLAGS) $(NVIDIA_LDFLAGS) -rdynamic
+LDLIBS = $(EXTRA_LDLIBS) $(OPENFSTLIBS) $(MKLFLAGS) $(NVISIA_LIBS) -lm -lpthread -ldl

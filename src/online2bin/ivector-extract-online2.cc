@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     BaseFloatMatrixWriter ivector_writer(ivectors_wspecifier);
     
 
-		time_o << "Utterance, frames, numAccStats, Global Time (s), Global Energy (J), noAccel Time (s), accel Time (s)" << std::endl;
+    time_o << "Utterance, frames, numAccStats, Global Time (s), Global Energy (J), noAccel Time (s), accel Time (s)" << std::endl;
     
     for (; !spk2utt_reader.Done(); spk2utt_reader.Next()) {
       std::string spk = spk2utt_reader.Key();
@@ -126,11 +126,10 @@ int main(int argc, char *argv[]) {
         
         OnlineMatrixFeature matrix_feature(feats);
 
-				//feat_timer.Reset();
-				resourceMonitor.startMonitoring(measure_period);				
+        resourceMonitor.startMonitoring(measure_period);				
 
         OnlineIvectorFeature ivector_feature(ivector_info,
-                                             &matrix_feature);
+                                            &matrix_feature);
         
         ivector_feature.SetAdaptationState(adaptation_state);
 
@@ -172,29 +171,24 @@ int main(int argc, char *argv[]) {
           ivector_feature.GetFrame(t, &ivector);
         }
 
-				//IvectorStatistics stats;
-				//ivector_feature.GetStatistics(stats);
+        resourceMonitor.endMonitoring();				
+        double elapsed = resourceMonitor.getTotalExecTime();
+        double cpuPower = resourceMonitor.getAveragePowerCPU();
+        double gpuPower = resourceMonitor.getAveragePowerGPU();
+        double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
+        double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+        int numValues = resourceMonitor.numData();
 
-				//double elapsed = feat_timer.Elapsed();
-				resourceMonitor.endMonitoring();				
-				double elapsed = resourceMonitor.getTotalExecTime();
-				double cpuPower = resourceMonitor.getAveragePowerCPU();
-				double gpuPower = resourceMonitor.getAveragePowerGPU();
-				double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
-				double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
-				int numValues = resourceMonitor.numData();
-	
-				if (numValues < 20) KALDI_WARN << "Less than 20 measures (" << numValues << ")";
-				IvectorStatistics stats;
-				ivector_feature.GetStatistics(stats);
+        if (numValues < 20) KALDI_WARN << "Less than 20 measures (" << numValues << ")";
+        IvectorStatistics stats;
+        ivector_feature.GetStatistics(stats);
 
-        // Update diagnostics.
-				time_o << utt << ", " << feats.NumRows() << ", " << stats.numAccStats << ", " << elapsed;
-				time_o << ", " << cpuEnergy << ", " << stats.noAccelTime << ", " << stats.accelTime;
-				time_o << std::endl;
+        time_o << utt << ", " << feats.NumRows() << ", " << stats.numAccStats << ", " << elapsed;
+        time_o << ", " << cpuEnergy << ", " << stats.noAccelTime << ", " << stats.accelTime;
+        time_o << std::endl;
 
-				// time_o << "Utterance, frames, numAccStats, Exec Time noAccel (s), Energy noAccel (J), Time accel (s), Energy accel (J), exec time Global (s), energy global CPU (J), energy Global GPU (J)" << std::endl;
-    
+        // time_o << "Utterance, frames, numAccStats, Exec Time noAccel (s), Energy noAccel (J), Time accel (s), Energy accel (J), exec time Global (s), energy global CPU (J), energy Global GPU (J)" << std::endl;
+
 
 
         tot_ubm_loglike += T * ivector_feature.UbmLogLikePerFrame();

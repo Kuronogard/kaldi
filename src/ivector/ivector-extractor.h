@@ -363,6 +363,32 @@ class IvectorExtractor {
                                  SpMatrix<double> *var);
 };
 
+
+class IvectorEstimationStatsStatistics {
+ public:
+	double accStatsTime;
+
+	IvectorEstimationStatsStatistics() :
+			accStatsTime(0.0) {}
+
+	void Reset() {
+		accStatsTime = 0.0;
+	}
+
+	IvectorEstimationStatsStatistics& operator=(const IvectorEstimationStatsStatistics& other) {
+		accStatsTime = other.accStatsTime;
+
+		return *this;
+	}	
+
+	IvectorEstimationStatsStatistics& operator+=(const IvectorEstimationStatsStatistics& other) {
+		accStatsTime += other.accStatsTime;
+
+		return *this;
+	}
+
+};
+
 /**
    This class helps us to efficiently estimate iVectors in situations where the
    data is coming in frame by frame.
@@ -378,6 +404,13 @@ class OnlineIvectorEstimationStats {
 
   OnlineIvectorEstimationStats(const OnlineIvectorEstimationStats &other);
 
+	void GetStatistics(IvectorEstimationStatsStatistics &stats) {
+		stats = statistics_;
+	}
+
+	void ResetStatistics() {
+		statistics_.Reset();
+	}
 
   void AccStats(const IvectorExtractor &extractor,
                 const VectorBase<BaseFloat> &feature,
@@ -436,6 +469,7 @@ class OnlineIvectorEstimationStats {
     this->num_frames_ = other.num_frames_;
     this->quadratic_term_=other.quadratic_term_;
     this->linear_term_=other.linear_term_;
+		this->statistics_ = other.statistics_;
     return *this;
   }
 
@@ -450,6 +484,8 @@ class OnlineIvectorEstimationStats {
   /// Returns objective function evaluated at the point
   /// [ prior_offset_, 0, 0, 0, ... ]... this is used in diagnostics.
   double DefaultObjf() const;
+
+	IvectorEstimationStatsStatistics statistics_;
 
   friend class IvectorExtractor;
   double prior_offset_;

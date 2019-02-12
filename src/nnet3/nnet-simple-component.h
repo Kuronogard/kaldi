@@ -844,7 +844,7 @@ class NaturalGradientAffineComponent: public AffineComponent {
   NaturalGradientAffineComponent(
       const CuMatrixBase<BaseFloat> &linear_params,
       const CuVectorBase<BaseFloat> &bias_params);
- private:
+ protected:
   // disallow assignment operator.
   NaturalGradientAffineComponent &operator= (
       const NaturalGradientAffineComponent&);
@@ -971,7 +971,7 @@ class LinearComponent: public UpdatableComponent {
   BaseFloat OrthonormalConstraint() const { return orthonormal_constraint_; }
   CuMatrixBase<BaseFloat> &Params() { return params_; }
   const CuMatrixBase<BaseFloat> &Params() const { return params_; }
- private:
+ protected:
 
   // disallow assignment operator.
   LinearComponent &operator= (

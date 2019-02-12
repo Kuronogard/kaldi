@@ -540,6 +540,12 @@ void DiagGmm::LogLikelihoods(const VectorBase<BaseFloat> &data,
   loglikes->AddMatVec(1.0, means_invvars_, kNoTrans, data, 1.0);
   // loglikes += -0.5 * inv(vars) * data_sq.
   loglikes->AddMatVec(-0.5, inv_vars_, kNoTrans, data_sq, 1.0);
+
+	std::cerr << "data:" << data.Dim();
+	std::cerr << " minv_r:" << means_invvars_.NumRows() << " minvr_c: " << means_invvars_.NumCols();
+	std::cerr << " invars_r:" << inv_vars_.NumRows() << " invvars_c:" << inv_vars_.NumCols();
+	std::cerr << " logLok: " << loglikes->Dim();
+	std::cerr << std::endl;
 }
 
 
@@ -559,6 +565,7 @@ void DiagGmm::LogLikelihoods(const MatrixBase<BaseFloat> &data,
   loglikes->AddMatMat(1.0, data, kNoTrans, means_invvars_, kTrans, 1.0);
   // loglikes += -0.5 * inv(vars) * data_sq.
   loglikes->AddMatMat(-0.5, data_sq, kNoTrans, inv_vars_, kTrans, 1.0);
+
 }
 
 

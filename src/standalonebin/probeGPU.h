@@ -1,3 +1,7 @@
+#ifndef __PROBEGPU_H
+#define __PROBEGPU_H
+
+
 #include <stdlib.h>
 #include <nvml.h>
 
@@ -28,3 +32,6 @@ private:
 	nvmlDevice_t device;
 
 };
+
+
+#endif
