@@ -19,6 +19,7 @@
 
 #include "online2/online-ivector-feature.h"
 #include "base/timer.h"
+#include "standalonebin/resource_monitor_threaded.h" 
 #include "standalonebin/resource_monitor.h" 
 
 
@@ -408,7 +409,6 @@ OnlineIvectorFeature::OnlineIvectorFeature(
     num_frames_stats_(0), delta_weights_provided_(false),
     updated_with_no_delta_weights_(false),
     most_recent_frame_with_weight_(-1), tot_ubm_loglike_(0.0) {
-	resourceMonitor.init();
   info.Check();
   KALDI_ASSERT(base_feature != NULL);
   splice_ = new OnlineSpliceFrames(info_.splice_opts, base_);

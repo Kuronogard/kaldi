@@ -33,7 +33,8 @@
 #include "feat/online-feature.h"
 #include "ivector/ivector-extractor.h"
 #include "decoder/lattice-faster-online-decoder.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor.h"
+#include "standalonebin/resource_monitor_threaded.h"
 
 namespace kaldi {
 /// @addtogroup  onlinefeat OnlineFeatureExtraction
@@ -323,7 +324,7 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
 
 	IvectorStatistics statistics_;
 
-	ResourceMonitor resourceMonitor;
+	ResourceMonitorThreaded resourceMonitor;
 
 
   // this function adds "weight" to the stats for frame "frame".

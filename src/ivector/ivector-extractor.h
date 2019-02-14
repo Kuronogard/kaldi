@@ -32,6 +32,7 @@
 #include "itf/options-itf.h"
 #include "util/common-utils.h"
 #include "hmm/posterior.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
@@ -444,7 +445,7 @@ class OnlineIvectorEstimationStats {
  protected:
 	IvectorStatistics statistics_;
 
-	ResourceMonitor resourceMonitor;
+	ResourceMonitorThreaded resourceMonitor;
 
   /// Returns objective function per frame, at this iVector value.
   double Objf(const VectorBase<double> &ivector) const;

@@ -11,7 +11,8 @@
 #include "lm/const-arpa-lm.h"
 #include "base/timer.h"
 #include "cudamatrix/cu-device.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor_threaded.h"
+#include "standalonebin/resource_monitor.h"
 
 int main(int argc, char **argv) {
 
@@ -78,8 +79,7 @@ int main(int argc, char **argv) {
 
 
 	//Timer rescore_timer;
-	ResourceMonitorARM resourceMonitor;
-	resourceMonitor.init();
+	ResourceMonitorThreaded resourceMonitor;
 
   // read old WFST LM (ARPA)
 	VectorFst<StdArc> *std_old_LM;

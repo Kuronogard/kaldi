@@ -27,7 +27,8 @@
 #include "gmm/am-diag-gmm.h"
 #include "online2/online-ivector-feature.h"
 #include "util/kaldi-thread.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor_threaded.h"
+#include "standalonebin/resource_monitor.h"
 
 int main(int argc, char *argv[]) {
   using namespace kaldi;
@@ -90,8 +91,7 @@ int main(int argc, char *argv[]) {
 				time_log_filename = po.GetArg(4);    
 
 		//Timer feat_timer;
-		ResourceMonitorARM resourceMonitor;
-		resourceMonitor.init();
+		ResourceMonitorThreaded resourceMonitor;
 
 		std::ofstream time_o(time_log_filename);
 

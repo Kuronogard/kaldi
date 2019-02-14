@@ -23,7 +23,9 @@
 #include "ivector/ivector-extractor.h"
 #include "util/kaldi-thread.h"
 #include "base/timer.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
+
 
 namespace kaldi {
 
@@ -743,7 +745,6 @@ OnlineIvectorEstimationStats::OnlineIvectorEstimationStats(int32 ivector_dim,
     prior_offset_(prior_offset), max_count_(max_count), num_frames_(0.0),
     quadratic_term_(ivector_dim), linear_term_(ivector_dim) {
 
-	resourceMonitor.init();
   if (ivector_dim != 0) {
     linear_term_(0) += prior_offset;
     quadratic_term_.AddToDiag(1.0);
@@ -759,7 +760,6 @@ OnlineIvectorEstimationStats::OnlineIvectorEstimationStats(
     num_frames_(other.num_frames_),
     quadratic_term_(other.quadratic_term_),
     linear_term_(other.linear_term_) { 
-	resourceMonitor.init();
 }
 
 

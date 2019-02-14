@@ -13,6 +13,7 @@
 #include "fstext/fstext-lib.h"
 #include "nnet3/nnet-am-decodable-simple.h"
 #include "nnet3/nnet-utils.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
 
 
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
 	
 
 	Timer decode_timer;
-	ResourceMonitor resourceMonitor;
+	ResourceMonitorThreaded resourceMonitor;
 
 	std::string am_nnet_filename = po.GetArg(1),
 							decode_graph_filename = po.GetArg(2),
@@ -136,8 +137,6 @@ int main(int argc, char **argv) {
 		}
 
 	}
-
-	resourceMonitor.init();	
 
 	kaldi::int64 frame_count = 0;
 	int32 num_success = 0, num_fail = 0;

@@ -27,7 +27,8 @@
 #include "util/common-utils.h"
 #include "feat/feature-mfcc.h"
 #include "feat/wave-reader.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor_threaded.h"
+#include "standalonebin/resource_monitor.h"
 
 int main(int argc, char *argv[]) {
   try {
@@ -82,8 +83,7 @@ int main(int argc, char *argv[]) {
     std::string output_wspecifier = po.GetArg(2);
 
 		std::string time_log_filename = po.GetArg(3);
-		ResourceMonitorARM resourceMonitor;
-		resourceMonitor.init();
+		ResourceMonitorThreaded resourceMonitor;
 		
 
     Mfcc mfcc(mfcc_opts);
