@@ -12,6 +12,7 @@
 #include "base/timer.h"
 #include "nnet3/nnet-am-decodable-simple.h"
 #include "nnet3/nnet-utils.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
 
 int main(int argc, char **argv) {
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
 		double measure_period = 0.1;
 
 		//Timer timer;
-		ResourceMonitor resourceMonitor;
+		ResourceMonitorThreaded resourceMonitor;
 
 		//bool pad_input = true;
 		//BaseFloat acoustic_scale = 0.1;
@@ -135,8 +136,6 @@ int main(int argc, char **argv) {
 
 		kaldi::int64 frame_count = 0;
 		kaldi::int64 utt_count = 0;
-		
-		resourceMonitor.init();
 	
 		for(; !features_reader.Done(); features_reader.Next()) {
 			std::string utt = features_reader.Key();

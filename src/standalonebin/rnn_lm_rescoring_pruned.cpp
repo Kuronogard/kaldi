@@ -9,6 +9,7 @@
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "base/timer.h"
 #include "nnet3/nnet-utils.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
 
 
@@ -112,8 +113,7 @@ int main(int argc, char **argv) {
 
 
 	//Timer rescore_timer;
-	ResourceMonitor resourceMonitor;
-	resourceMonitor.init();
+	ResourceMonitorThreaded resourceMonitor;
 
 	std::ofstream quant_o;
 	if (quant_log != "") {
@@ -201,9 +201,9 @@ int main(int argc, char **argv) {
 		else {
 			profile_o << "Utterance, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J), energy GPU (J)";	
 			profile_o << ", num values, rnnlm time, rnnlm energy, rnnlm num execs";
-            profile_o << ", latCompose totalTime (s), latComposeStats totalEnergy (J), latCompose rnnTime, latCompose rnnEnergy";
-            profile_o << ", latComposeStats HeuristicTime, latComposeStats HeuristicEnergy";
-            profile_o << std::endl;
+      profile_o << ", latCompose totalTime (s), latComposeStats totalEnergy (J), latCompose rnnTime, latCompose rnnEnergy";
+      profile_o << ", latComposeStats HeuristicTime, latComposeStats HeuristicEnergy";
+      profile_o << std::endl;
 		}
 	}
 	else {
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
 		
 			std::cout << "Starting LM rescore for " << utt << std::endl;
 
-            rnnlm::KaldiRnnlmDeterministicFst* lm_to_add_orig = new rnnlm::KaldiRnnlmDeterministicFst(max_ngram_order, info, rnnlm_measure_period);
+      rnnlm::KaldiRnnlmDeterministicFst* lm_to_add_orig = new rnnlm::KaldiRnnlmDeterministicFst(max_ngram_order, info, rnnlm_measure_period);
 			//rescore_timer.Reset();		
 			resourceMonitor.startMonitoring(measure_period);
 
@@ -234,10 +234,12 @@ int main(int argc, char **argv) {
 			TopSortCompactLatticeIfNeeded(&clat);
 
 			fst::ComposeDeterministicOnDemandFst<StdArc> combined_lms(lm_to_subtract_det_scale, lm_to_add);
+      std::cerr << "Before Rescoring" << std::endl;
 
-            ComposeLatticePrunedStats latComposeStats;
+      ComposeLatticePrunedStats latComposeStats;
 			CompactLattice composed_clat;
 			ComposeCompactLatticePruned(compose_pruned_opts, clat, &combined_lms, &composed_clat, &latComposeStats);
+      std::cerr << "After Rescoring" << std::endl;
 
 			//lm_to_add_orig->Clear();
 
@@ -311,7 +313,6 @@ int main(int argc, char **argv) {
 			}
 
 			if (profile_o.is_open()) {
-                // latComposeStats
 				double elapsed = resourceMonitor.getTotalExecTime();
 				double cpuPower = resourceMonitor.getAveragePowerCPU();
 				double gpuPower = resourceMonitor.getAveragePowerGPU();
@@ -335,10 +336,10 @@ int main(int argc, char **argv) {
                 //double computeHeuristicEnergy;
                 //double rnnComputationsEnergy;
                 //double totalEnergy;
-                profile_o << ", " << latComposeStats.totalTime << ", " << latComposeStats.totalEnergy;
-                profile_o << ", " << latComposeStats.rnnComputationsTime << ", " << latComposeStats.rnnComputationsEnergy;
-                profile_o << ", " << latComposeStats.computeHeuristicTime << ", " << latComposeStats.computeHeuristicEnergy;
-                profile_o << std::endl;
+        profile_o << ", " << latComposeStats.totalTime << ", " << latComposeStats.totalEnergy;
+        profile_o << ", " << latComposeStats.rnnComputationsTime << ", " << latComposeStats.rnnComputationsEnergy;
+        profile_o << ", " << latComposeStats.computeHeuristicTime << ", " << latComposeStats.computeHeuristicEnergy;
+        profile_o << std::endl;
 			}
 
 

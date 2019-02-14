@@ -9,7 +9,7 @@
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "base/timer.h"
 #include "nnet3/nnet-utils.h"
-#include "standalonebin/resource_monitor.h"
+#include "standalonebin/resource_monitor_threaded.h"
 
 
 #define ABS_(a) (((a)>=0)? (a) : -(a))
@@ -112,8 +112,7 @@ int main(int argc, char **argv) {
 
 
 	//Timer rescore_timer;
-	ResourceMonitor resourceMonitor;
-	resourceMonitor.init();
+	ResourceMonitorThreaded resourceMonitor;
 
 	std::ofstream quant_o;
 	if (quant_log != "") {

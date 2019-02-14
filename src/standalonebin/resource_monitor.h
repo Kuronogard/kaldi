@@ -1,4 +1,4 @@
-#ifndef __RESOURCE_MONITOR_H__
+#ifndef __RESOURCE_MONITOR_H
     #define __RESOURCE_MONITOR_H
 
     #if PLATFORM_INTEL

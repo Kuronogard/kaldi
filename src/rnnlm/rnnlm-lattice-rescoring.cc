@@ -25,6 +25,8 @@
 #include "rnnlm/rnnlm-lattice-rescoring.h"
 #include "util/stl-utils.h"
 #include "util/text-utils.h"
+#include "standalonebin/resource_monitor_threaded.h"
+#include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
 namespace rnnlm {
@@ -58,7 +60,7 @@ void KaldiRnnlmDeterministicFst::Clear() {
 }
 
 KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
-    const RnnlmComputeStateInfo &info, double measure_period) : resourceMonitor() {
+    const RnnlmComputeStateInfo &info, double measure_period) : resourceMonitor(false) {
   max_ngram_order_ = max_ngram_order;
   bos_index_ = info.opts.bos_index;
   eos_index_ = info.opts.eos_index;
@@ -76,10 +78,6 @@ KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
 	measure_period_ = measure_period;
 
   state_to_rnnlm_state_.push_back(decodable_rnnlm);
-
-	if (measure_period_ > 0) {
-		resourceMonitor.init();
-	}
 }
 
 void KaldiRnnlmDeterministicFst::GetStatistics(double &execTime, double &energy, int &num_executions) {
@@ -136,19 +134,20 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
 			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
 			resourceMonitor.endMonitoring();
 
-			if (resourceMonitor.numData() < 50) {
-				cerr << "WARN: less than 50 measures inside rnnlm (" << resourceMonitor.numData() << ")" << endl;
-			}
+			//if (resourceMonitor.numData() < 50) {
+			//	cerr << "WARN: less than 50 measures inside rnnlm (" << resourceMonitor.numData() << ")" << endl;
+			//}
 
 			accum_exec_time_ += resourceMonitor.getTotalExecTime();
 			accum_energy_ += resourceMonitor.getTotalEnergyCPU();
+      resourceMonitor.clearData();
 		} else {
 			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
 		}
 
     state_to_wseq_.push_back(word_seq);
     state_to_rnnlm_state_.push_back(rnnlm2);
-        std::cout << "Num network executions + 1 " << num_network_executions_ << std::endl;
+    //std::cout << "Num network executions + 1 " << num_network_executions_ << std::endl;
 		num_network_executions_++;
 	}
 

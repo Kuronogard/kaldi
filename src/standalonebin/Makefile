@@ -13,7 +13,8 @@ LDLIBS += $(CUDA_LDLIBS)
 #BINFILES = rapl-read resourceMonitorTest aclattice2lattice decode rnn_lm_rescoring wfst_lm_rescoring extract_probs_B extract_probs_B_accel
 
 BINFILES = lattice_compute_metrics check_metric compare_acprobs rapl-read aclattice2lattice decode rnn_lm_rescoring \
-           rnn_lm_rescoring_pruned rnn_lm_rescoring_pruned_2 wfst_lm_rescoring extract_probs_B extract_probs_B_accel
+           rnn_lm_rescoring_pruned rnn_lm_rescoring_pruned_2 wfst_lm_rescoring extract_probs_B extract_probs_B_accel \
+					 resourceMonitorTest
            
            
            
@@ -33,6 +34,8 @@ else
 $(error No platform defined)
 endif
 endif
+
+OBJFILES += resource_monitor_threaded.o
 
 
 LIBNAME = standalone-utils

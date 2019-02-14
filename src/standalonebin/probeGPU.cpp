@@ -10,8 +10,8 @@
 using namespace std;
 
 
-ProbeGPU::ProbeGPU() {
-
+ProbeGPU::ProbeGPU(bool verbose) {
+  verbose_ = verbose;
 }
 
 
@@ -20,6 +20,12 @@ ProbeGPU::~ProbeGPU() {
 
 }
 
+
+void ProbeGPU::printMessage(char *msg) {
+  if(verbose_) {
+    std::cerr << msg << std::endl;
+  }
+}
 
 void ProbeGPU::init() {
 
@@ -61,7 +67,7 @@ void ProbeGPU::init() {
 		return;
 	}
 
-	cerr << "monitoring GPU Device 0: " << string(name) << "." << endl;
+	printMessage(name);
 }
 
 

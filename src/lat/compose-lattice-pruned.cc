@@ -21,6 +21,7 @@
 
 #include "lat/compose-lattice-pruned.h"
 #include "lat/lattice-functions.h"
+#include "standalonebin/resource_monitor_threaded.h"
 #include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
@@ -424,9 +425,9 @@ int32 PrunedCompactLatticeComposer::GetCurrentArcLimit() const {
 void PrunedCompactLatticeComposer::RecomputePruningInfo() {
     
   // Start monitoring resource consumption
-  ResourceMonitor resourceMonitor;
-  resourceMonitor.init();
-  
+  ResourceMonitorThreaded resourceMonitor(false);
+
+
   resourceMonitor.startMonitoring(opts_.measure_period);
     
   std::vector<int32> all_composed_states;
@@ -439,6 +440,7 @@ void PrunedCompactLatticeComposer::RecomputePruningInfo() {
   resourceMonitor.endMonitoring();
   stats_.computeHeuristicTime += resourceMonitor.getTotalExecTime();
   stats_.computeHeuristicEnergy += resourceMonitor.getTotalEnergyCPU();
+  std::cerr << "Heuristic Time " << stats_.computeHeuristicTime << "Energy " << stats_.computeHeuristicEnergy << std::endl;
 }
 
 void PrunedCompactLatticeComposer::ComputeForwardCosts(
@@ -788,8 +790,7 @@ void PrunedCompactLatticeComposer::ProcessTransition(int32 src_composed_state,
   // Note: we expect that ilabel == olabel, since this is a CompactLattice, but this
   // may not be so if we extend this to work with Lattice.
   fst::StdArc lm_arc;
-  ResourceMonitor resourceMonitor;
-  resourceMonitor.init();
+  ResourceMonitorThreaded resourceMonitor;
   
   resourceMonitor.startMonitoring(opts_.measure_period);
   bool getArcCorrect = det_fst_->GetArc(src_info->lm_state, olabel, &lm_arc);
@@ -903,7 +904,7 @@ static int32 TotalNumArcs(const CompactLattice &clat) {
 }
 
 void PrunedCompactLatticeComposer::getStatistics(ComposeLatticePrunedStats &stats) {
-   stats.copyFrom(this->stats_);
+   stats.copyFrom(stats_);
 }
 
 
@@ -914,18 +915,21 @@ void PrunedCompactLatticeComposer::Compose() {
   }
   
   // Start monitoring the resource consumption
-  ResourceMonitor resourceMonitor;
-  resourceMonitor.init();
+  ResourceMonitorThreaded resourceMonitor;
   
   resourceMonitor.startMonitoring(opts_.measure_period);
   
   ComputeLatticeStateInfo();
+  std::cerr << "After compute state info" << std::endl;
   AddFirstState();
+  std::cerr << "after add first state" << std::endl;
   // while (we have not reached final state  ||
   //        num-arcs produced < target num-arcs) { ...
   while (output_best_cost_ == std::numeric_limits<double>::infinity() ||
          num_arcs_out_ < opts_.max_arcs) {
+    std::cerr << "Before Pruning Composer" << std::endl;
     RecomputePruningInfo();
+    std::cerr << "After Pruning Composer" << std::endl;
     int32 this_iter_arc_limit = GetCurrentArcLimit();
     while (num_arcs_out_ < this_iter_arc_limit &&
            !composed_state_queue_.empty()) {
@@ -984,9 +988,11 @@ void ComposeCompactLatticePruned(
     fst::DeterministicOnDemandFst<fst::StdArc> *det_fst,
     CompactLattice* composed_clat,
     ComposeLatticePrunedStats* stats) {
-  PrunedCompactLatticeComposer composer(opts, clat, det_fst, composed_clat);
 
+  PrunedCompactLatticeComposer composer(opts, clat, det_fst, composed_clat);
   composer.Compose();
+  std::cerr << "Before Rescoring Outside" << std::endl;
+
   
   if (stats != NULL) {
     composer.getStatistics(*stats);

@@ -20,7 +20,7 @@ class ProbeGPU {
 
 public:
 
-	ProbeGPU();
+	ProbeGPU(bool verbose = false);
 	~ProbeGPU();
 
 	void init();
@@ -29,8 +29,10 @@ public:
 
 private:
 
+  bool verbose_;
 	nvmlDevice_t device;
 
+  void printMessage(char *msg);
 };
 
 

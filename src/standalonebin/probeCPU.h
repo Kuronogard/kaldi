@@ -64,14 +64,30 @@
 #define CPU_HASWELL		60
 #define CPU_HASWELL_EP		63
 #define CPU_BROADWELL		61
+#define CPU_SKYLAKE  94
 
 
 
 struct rawEnergyCPU_t {
-	long long package;
-	long long pp0;
-	long long pp1;
-	long long dram;
+  long long package;
+  long long pp0;
+  long long pp1;
+  long long dram;
+
+  rawEnergyCPU_t() :
+    package(0),
+    pp0(0),
+    pp1(0),
+    dram(0) {}
+
+  rawEnergyCPU_t& operator=(const rawEnergyCPU_t& other) {
+    package = other.package;
+    pp0 = other.pp0;
+    pp1 = other.pp1;
+    dram = other.dram;
+
+    return *this;
+  }
 };
 
 
@@ -80,6 +96,21 @@ struct energyCPU_t {
 	double pp0;
 	double pp1;
 	double dram;
+
+  energyCPU_t() :
+    package(0.),
+    pp0(0.),
+    pp1(0.),
+    dram(0.) {}
+
+  energyCPU_t& operator=(const energyCPU_t& other) {
+    package = other.package;
+    pp0 = other.pp0;
+    pp1 = other.pp1;
+    dram = other.dram;
+
+    return *this;
+  }
 };
 
 
@@ -87,7 +118,7 @@ class ProbeCPU {
 
 public:
 
-	ProbeCPU();
+	ProbeCPU(bool verbose = false);
 	~ProbeCPU();
 
 	void init();
@@ -99,9 +130,13 @@ public:
 
 private:
 
+  void printMessage(char *msg);
+
 	int open_msr(int core);
 	uint64_t read_msr(int fd, int which);
 	int detect_cpu(void);	
+
+  bool verbose_;
 
 	int fd;
 	double power_units,time_units;

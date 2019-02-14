@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include "resource_monitor.h"
+#include "resource_monitor_threaded.h"
 
 
 
@@ -11,13 +11,12 @@ using namespace std;
 int main(int argc, char **argv) {
 
 
-	ResourceMonitor monitor;
-	monitor.init();
+	ResourceMonitorThreaded monitor;
 
 	cerr << "Start monitoring" << endl;
 	monitor.startMonitoring(0.5);
 	cerr << "Start sleep 5" << endl;
-	sleep(5);
+	//sleep(5);
 	cerr << "End sleep" << endl;
 	monitor.endMonitoring();
 	cerr << "Monitoring finished" << endl;

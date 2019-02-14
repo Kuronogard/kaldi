@@ -1,10 +1,16 @@
 #include "resource_monitor_intel.h"
-
 #include <sys/time.h>
 #include <iostream>
-#include <pthread.h>
 #include <unistd.h>
 #include <nvml.h>
+#include <string>
+
+
+void ResourceMonitorIntel::printInfo(bool verbose, std::string msg) {
+  if (verbose) {
+    std::cerr << msg << std::endl;
+  }
+}
 
 
 int ResourceMonitorIntel::numData() {
@@ -15,6 +21,12 @@ bool ResourceMonitorIntel::hasData() {
 	return _timestamp.size() > 0;
 }
 
+
+void ResourceMonitorIntel::clearData() {
+  _timestamp.clear();
+  _powerGPU.clear();
+  _energyCPU.clear();
+}
 
 double ResourceMonitorIntel::interval_GPU_power(int i) {
 	return (_powerGPU[i] + _powerGPU[i+1]) / 2;
@@ -53,57 +65,18 @@ double ResourceMonitorIntel::interval_CPU_power_est(int i, double prev_power) {
 
 
 
-ResourceMonitorIntel::ResourceMonitorIntel() {
-	running = false;
-	pthread_mutex_init(&lock, NULL);
+ResourceMonitorIntel::ResourceMonitorIntel(bool verbose) {
+  verbose_ = verbose;
+  _timestamp.clear();
+  _energyCPU.clear();
+  _powerGPU.clear();
 
-}
-
-ResourceMonitorIntel::~ResourceMonitorIntel() {
-	pthread_mutex_destroy(&lock);
-
-}
-
-
-/**
- * Initialize the monitoring object, trying to access each relevant
- * system
- */
-void ResourceMonitorIntel::init() {
-
-	if (running) {
-		cerr << "Already running. Doing nothing." << endl;
-		return;
-	}
-
-	_timestamp.clear();
-	_energyCPU.clear();
-	_powerGPU.clear();
-
-	probeCPU.init();
-	probeGPU.init();
-
-}
-
-void ResourceMonitorIntel::startMonitoring(double seconds) {
-
-	measure_period = seconds * 1000000;
-	setEndMonitor(false);
-	running = true;
-
-	gettimeofday(&_startTime, &_timeZone);
-	pthread_create(&monitor_thread, NULL, &background_monitor_handler, (void*)this);
+  probeCPU.init();
+  probeGPU.init();
 }
 
 
-void ResourceMonitorIntel::endMonitoring() {
-
-	gettimeofday(&_endTime, &_timeZone);
-	setEndMonitor(true);
-
-	pthread_join(monitor_thread, NULL);
-	running = false;
-}
+ResourceMonitorIntel::~ResourceMonitorIntel() {}
 
 
 /*
@@ -113,11 +86,16 @@ void ResourceMonitorIntel::endMonitoring() {
 double ResourceMonitorIntel::getTotalEnergyCPU() {
 	// probeCPU fetches energy
 	// Get the first measure, the last one, and substract them
-	double energy;
+	double energy = 0;
 	rawEnergyCPU_t rawEnergy_start;
 	rawEnergyCPU_t rawEnergy_end;
 	rawEnergyCPU_t rawEnergy_total;
 	energyCPU_t energy_total;
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return 0;
+	}
 
 	// Read start and end energy readings
 	rawEnergy_start = _energyCPU.front();
@@ -147,6 +125,11 @@ double ResourceMonitorIntel::getTotalEnergyGPU() {
 
 	double energy = 0;
 
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return 0;
+	}
+
 	for(int i = 0; i < _powerGPU.size()-1; i++) {
 		double time, power;
 
@@ -162,12 +145,22 @@ double ResourceMonitorIntel::getTotalEnergyGPU() {
 
 double ResourceMonitorIntel::getTotalExecTime() {
 
-	//return timeInterval(_timestamp.front(), _timestamp.back());
-	return timeInterval(_startTime, _endTime);
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return 0;
+	}
+
+	return timeInterval(_timestamp.front(), _timestamp.back());
+	//return timeInterval(_startTime, _endTime);
 }
 
 
 double ResourceMonitorIntel::getAveragePowerCPU() {
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return 0;
+	}
 
 	double energy, time;
 	time = getTotalExecTime();
@@ -177,6 +170,11 @@ double ResourceMonitorIntel::getAveragePowerCPU() {
 }
 
 double ResourceMonitorIntel::getAveragePowerGPU() {	
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return 0;
+	}
 
 	double avg_power = 0;
 	int num_intervals = _powerGPU.size()-1;
@@ -192,6 +190,11 @@ double ResourceMonitorIntel::getAveragePowerGPU() {
 
 void ResourceMonitorIntel::getPowerCPU(vector<double> &timestamp, vector<double> &power) {
 	
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return;
+	}
+
 	double avg_power = getAveragePowerCPU();
 	double time;
 
@@ -213,6 +216,11 @@ void ResourceMonitorIntel::getPowerGPU(vector<double> &timestamp, vector<double>
 
 	double time;
 
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return;
+	}
+
 	timestamp.clear();
 	power.clear();
 
@@ -232,6 +240,11 @@ void ResourceMonitorIntel::getPower(vector<double> &timestamp, vector<double> &p
 
 	double time;
 	//double avg_power = getAveragePowerCPU();
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
+		return;
+	}
 
 	timestamp.clear();
 	powerCPU.clear();
@@ -259,60 +272,30 @@ void ResourceMonitorIntel::getPower(vector<double> &timestamp, vector<double> &p
 }
 
 
+void ResourceMonitorIntel::asyncDataFetch() {
+  timeval timestamp;
+  rawEnergyCPU_t cpuRawEnergy;
+  rawPowerGPU_t gpuRawPower;
+  powerGPU_t gpuPower;
 
-void * ResourceMonitorIntel::background_monitor_handler(void * arg) {
+  //cerr << "Measuring" << endl;
+  // Check time
+  gettimeofday(&timestamp, NULL);		
 
-	if (arg == NULL)
-		pthread_exit(NULL);
+  // Check CPU energy
+  probeCPU.fetchRawEnergy(&cpuRawEnergy);
 
-//	cerr << "Inside thread" << endl;
+  // Check GPU energy
+  probeGPU.fetchRawPower(&gpuRawPower);
+  probeGPU.raw2watt(&gpuRawPower, &gpuPower);
 
-	ResourceMonitorIntel *parent = (ResourceMonitorIntel*)arg;
-	useconds_t wait_time = parent->measure_period;
-
-
-	while(!parent->monitorMustEnd()) {
-		timeval timestamp;
-		rawEnergyCPU_t cpuRawEnergy;
-		rawPowerGPU_t gpuRawPower;
-		powerGPU_t gpuPower;
-
-//		cerr << "Measuring" << endl;
-
-		// Check time
-		gettimeofday(&timestamp, NULL);		
-
-		// Check CPU energy
-		parent->probeCPU.fetchRawEnergy(&cpuRawEnergy);
-
-		// Check GPU energy
-		parent->probeGPU.fetchRawPower(&gpuRawPower);
-		parent->probeGPU.raw2watt(&gpuRawPower, &gpuPower);
-
-		parent->_timestamp.push_back(timestamp);
-		parent->_energyCPU.push_back(cpuRawEnergy);
-		parent->_powerGPU.push_back(gpuPower.power);
-
-		usleep(wait_time); // 1/2 second
-	}
-
-	pthread_exit(NULL);
+  _timestamp.push_back(timestamp);
+  printInfo(verbose_, "BEFORE push_back");
+  _energyCPU.push_back(cpuRawEnergy);
+  printInfo(verbose_, "AFTER push_back");
+  _powerGPU.push_back(gpuPower.power);
 }
 
-bool ResourceMonitorIntel::monitorMustEnd() {
-	bool value;
-	pthread_mutex_lock(&lock);
-	value = end_monitoring;
-	pthread_mutex_unlock(&lock);
-
-	return value;
-}
-
-void ResourceMonitorIntel::setEndMonitor(bool value) {
-	pthread_mutex_lock(&lock);
-	end_monitoring = value;
-	pthread_mutex_unlock(&lock);
-}
 
 
 double ResourceMonitorIntel::timeval2double(struct timeval time) {
