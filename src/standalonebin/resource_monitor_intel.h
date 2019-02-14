@@ -1,12 +1,13 @@
-#ifndef RESOURCE_MONITOR_H
-#define RESOURCE_MONITOR_H
+#ifndef __RESOURCE_MONITOR_INTEL_H
+#define __RESOURCE_MONITOR_INTEL_H
 
 #include <stdlib.h>
-#include <pthread.h>
 #include <vector>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
+#include <string>
 
 #include "standalonebin/probeCPU.h"
 #include "standalonebin/probeGPU.h"
@@ -17,13 +18,8 @@ using namespace std;
 class ResourceMonitorIntel {
 
 public:
-	ResourceMonitorIntel();
+	ResourceMonitorIntel(bool verbose = false);
 	~ResourceMonitorIntel();
-
-	void startMonitoring(double seconds);
-	void endMonitoring();
-	
-	void init();
 
 	double getTotalEnergyCPU();
 	double getTotalEnergyGPU();
@@ -35,33 +31,29 @@ public:
 	void getPowerGPU(vector<double> &timestamp, vector<double> &power);
 	void getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU);
 
+  void asyncDataFetch();
+
 	int numData();
 	bool hasData();
+  void clearData();
 
 private:
 
 	ProbeCPU probeCPU;
 	ProbeGPU probeGPU;
 
-	bool running;
-	pthread_mutex_t lock;
-	bool end_monitoring;
-	pthread_t monitor_thread;
+  bool verbose_;
 
-	struct timeval _startTime;
-	struct timeval _endTime;
 	struct timezone _timeZone;
 
 	vector<timeval> _timestamp;
 	vector<rawEnergyCPU_t> _energyCPU;
 	vector<double> _powerGPU;
 
-	useconds_t measure_period;
+	//bool firstRead();
+	//void setFirstRead(bool value);
 
-	static void * background_monitor_handler(void * args);
-	bool monitorMustEnd();
-	void setEndMonitor(bool value);
-
+  void printInfo(bool verbose, std::string msg);
 	double timeInterval(struct timeval start, struct timeval end);
 	double interval_GPU_power(int i);
 	double interval_CPU_power(int i);

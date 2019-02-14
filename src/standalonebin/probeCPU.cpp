@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <iostream>
 
-
-ProbeCPU::ProbeCPU() {
+ProbeCPU::ProbeCPU(bool verbose) {
 	fd = 0;
-
+  verbose_ = verbose;
 }
 
 
@@ -16,7 +16,11 @@ ProbeCPU::~ProbeCPU() {
 
 }
 
-
+void ProbeCPU::printMessage(char *msg) {
+  if(verbose_) {
+		std::cerr << msg << std::endl;
+  }
+}
 
 int ProbeCPU::open_msr(int core) {
 
@@ -99,29 +103,33 @@ int ProbeCPU::detect_cpu(void) {
 
 	switch(model) {
 		case CPU_SANDYBRIDGE:
-			printf("Found Sandybridge CPU\n");
+			printMessage("Found Sandybridge CPU\n");
 			break;
 		case CPU_SANDYBRIDGE_EP:
-			printf("Found Sandybridge-EP CPU\n");
+			printMessage("Found Sandybridge-EP CPU\n");
 			break;
 		case CPU_IVYBRIDGE:
-			printf("Found Ivybridge CPU\n");
+			printMessage("Found Ivybridge CPU\n");
 			break;
 		case CPU_IVYBRIDGE_EP:
-			printf("Found Ivybridge-EP CPU\n");
+			printMessage("Found Ivybridge-EP CPU\n");
 			break;
 		case CPU_HASWELL:
-			printf("Found Haswell CPU\n");
+			printMessage("Found Haswell CPU\n");
 			break;
 		case CPU_HASWELL_EP:
-			printf("Found Haswell-EP CPU\n");
+			printMessage("Found Haswell-EP CPU\n");
 			break;
 		case CPU_BROADWELL:
-			printf("Found Broadwell CPU\n");
+			printMessage("Found Broadwell CPU\n");
 			break;
-		default:	printf("Unsupported model %d\n",model);
-				model=-1;
-				break;
+		case CPU_SKYLAKE:
+			printMessage("Found Skylake CPU\n");
+			break;
+		default:	
+      printMessage("Unsupported model");
+      model=-1;
+      break;
 	}
 
 	return model;
@@ -134,10 +142,10 @@ void ProbeCPU::init() {
 
 	cpu_model=detect_cpu();
 	if (cpu_model<0) 
-		printf("Unsupported CPU type\n");
+		std::cerr << "WARN: Unsupported CPU type" << std::endl;
 		
 
-	printf("Checking core #%d\n",core);
+	//printf("Checking core #%d\n",core);
 
 	fd=open_msr(core);
 
@@ -156,13 +164,14 @@ void ProbeCPU::init() {
 		dram_energy_units=cpu_energy_units;
 	}
 
+/*
 	printf("Power units = %.3fW\n",power_units);
 	printf("CPU Energy units = %.8fJ\n",cpu_energy_units);
 	printf("DRAM Energy units = %.8fJ\n",dram_energy_units);
 	printf("Time units = %.8fs\n",time_units);
 	printf("\n");
 
-	/* Show package power info */
+	// Show package power info 
 	result=read_msr(fd,MSR_PKG_POWER_INFO);
 	thermal_spec_power=power_units*(double)(result&0x7fff);
 	printf("Package thermal spec: %.3fW\n",thermal_spec_power);
@@ -173,7 +182,7 @@ void ProbeCPU::init() {
 	time_window=time_units*(double)((result>>48)&0x7fff);
 	printf("Package maximum time window: %.6fs\n",time_window);
 
-	/* Show package power limit */
+	// Show package power limit 
 	result=read_msr(fd,MSR_PKG_RAPL_POWER_LIMIT);
 	printf("Package power limits are %s\n", (result >> 63) ? "locked" : "unlocked");
 	double pkg_power_limit_1 = power_units*(double)((result>>0)&0x7FFF);
@@ -190,6 +199,7 @@ void ProbeCPU::init() {
 		(result & (1LL<<48)) ? "clamped" : "not_clamped");
 
 	printf("\n");
+*/
 }
 
 
