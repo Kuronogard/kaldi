@@ -32,7 +32,7 @@
 #include "itf/options-itf.h"
 #include "util/common-utils.h"
 #include "hmm/posterior.h"
-#include "standalonebin/resource_monitor_ARM.h"
+#include "standalonebin/resource_monitor.h"
 
 namespace kaldi {
 
@@ -151,7 +151,7 @@ class IvectorStatistics {
 		numAccStats = 0;
 	}
 
-	IvectorStatistics& operator=(IvectorStatistics& other) {
+	IvectorStatistics& operator=(const IvectorStatistics& other) {
 		noAccelTime = other.noAccelTime;
 		noAccelEnergyCPU = other.noAccelEnergyCPU;
 		noAccelEnergyGPU = other.noAccelEnergyGPU;
@@ -163,7 +163,7 @@ class IvectorStatistics {
 		return *this;
 	}
 
-	IvectorStatistics& operator+=(IvectorStatistics& other) {
+	IvectorStatistics& operator+=(const IvectorStatistics& other) {
 		noAccelTime += other.noAccelTime;
 		noAccelEnergyCPU += other.noAccelEnergyCPU;
 		noAccelEnergyGPU += other.noAccelEnergyGPU;
@@ -364,31 +364,6 @@ class IvectorExtractor {
 };
 
 
-class IvectorEstimationStatsStatistics {
- public:
-	double accStatsTime;
-
-	IvectorEstimationStatsStatistics() :
-			accStatsTime(0.0) {}
-
-	void Reset() {
-		accStatsTime = 0.0;
-	}
-
-	IvectorEstimationStatsStatistics& operator=(const IvectorEstimationStatsStatistics& other) {
-		accStatsTime = other.accStatsTime;
-
-		return *this;
-	}	
-
-	IvectorEstimationStatsStatistics& operator+=(const IvectorEstimationStatsStatistics& other) {
-		accStatsTime += other.accStatsTime;
-
-		return *this;
-	}
-
-};
-
 /**
    This class helps us to efficiently estimate iVectors in situations where the
    data is coming in frame by frame.
@@ -404,13 +379,6 @@ class OnlineIvectorEstimationStats {
 
   OnlineIvectorEstimationStats(const OnlineIvectorEstimationStats &other);
 
-	void GetStatistics(IvectorEstimationStatsStatistics &stats) {
-		stats = statistics_;
-	}
-
-	void ResetStatistics() {
-		statistics_.Reset();
-	}
 
   void AccStats(const IvectorExtractor &extractor,
                 const VectorBase<BaseFloat> &feature,
@@ -468,15 +436,15 @@ class OnlineIvectorEstimationStats {
     this->max_count_ = other.max_count_;
     this->num_frames_ = other.num_frames_;
     this->quadratic_term_=other.quadratic_term_;
-    this->linear_term_=other.linear_term_;
-		this->statistics_ = other.statistics_;
+    this->linear_term_= other.linear_term_;
+    this->statistics_ = other.statistics_;
     return *this;
   }
 
  protected:
 	IvectorStatistics statistics_;
 
-	ResourceMonitorARM resourceMonitor;
+	ResourceMonitor resourceMonitor;
 
   /// Returns objective function per frame, at this iVector value.
   double Objf(const VectorBase<double> &ivector) const;
@@ -485,7 +453,6 @@ class OnlineIvectorEstimationStats {
   /// [ prior_offset_, 0, 0, 0, ... ]... this is used in diagnostics.
   double DefaultObjf() const;
 
-	IvectorEstimationStatsStatistics statistics_;
 
   friend class IvectorExtractor;
   double prior_offset_;

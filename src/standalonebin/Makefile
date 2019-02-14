@@ -24,13 +24,13 @@ BINFILES = lattice_compute_metrics check_metric compare_acprobs rapl-read aclatt
 #endif()
 
 ifeq ($(PLATFORM), PLATFORM_INTEL)
-	OBJFILES = resource_monitor_intel.o probeCPU.o probeGPU.o
+OBJFILES = resource_monitor_intel.o probeCPU.o probeGPU.o
 else
 ifeq ($(PLATFORM), PLATFORM_ARM)
-	#$(warning The following command will probably fail, in that case add -fPIC to your CXXFLAGS and remake all.)
-	OBJFILES = resource_monitor_ARM.o probeARM.o
+#$(warning The following command will probably fail, in that case add -fPIC to your CXXFLAGS and remake all.)
+OBJFILES = resource_monitor_ARM.o probeARM.o
 else
-	$(error No platform defined)
+$(error No platform defined)
 endif
 endif
 

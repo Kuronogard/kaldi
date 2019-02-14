@@ -566,8 +566,7 @@ void OnlineIvectorEstimationStats::AccStats(
     // allow negative weights; it's needed in the online iVector extraction
     // with speech-silence detection based on decoder traceback (we subtract
     // stuff we previously added if the traceback changes).
-		statistics_.accStatsTime ++;
-		std::cerr << "Gaus_post_size: " << gauss_post.size() << " g: " << g << std::endl;
+    std::cerr << "Gaus_post_size: " << gauss_post.size() << " g: " << g << std::endl;
 
     if (weight == 0.0)
       continue;

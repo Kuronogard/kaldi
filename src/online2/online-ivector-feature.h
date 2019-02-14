@@ -233,30 +233,6 @@ struct OnlineIvectorExtractorAdaptationState {
 };
 
 
-
-class IvectorStatistics {
-  public:
-    double update_time;
-		double ubm_time;
-		double acstats;
-		IvectorEstimationStatsStatistics ivecEstimationStats;
-
-  IvectorStatistics() :
-    update_time(0.0),
-		ubm_time(0.0),
-		acstats(0.0),
-		ivecEstimationStats() {}
-
-  IvectorStatistics& operator=(IvectorStatistics& other) {
-    update_time = other.update_time;
-		ubm_time = other.ubm_time;
-		acstats = other.acstats;
-		ivecEstimationStats = other.ivecEstimationStats;
-    return *this;
-  }
-};
-
-
 /// OnlineIvectorFeature is an online feature-extraction class that's responsible
 /// for extracting iVectors from raw features such as MFCC, PLP or filterbank.
 /// Internally it processes the raw features using two different pipelines, one
@@ -294,9 +270,6 @@ class OnlineIvectorFeature: public OnlineFeatureInterface {
 
   // Member functions from OnlineFeatureInterface:
 
-	void GetStatistics(IvectorStatistics &stats) {
-		stats = statistics_;
-	}
 
   /// Dim() will return the iVector dimension.
   virtual int32 Dim() const;

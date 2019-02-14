@@ -264,7 +264,6 @@ void OnlineIvectorFeature::UpdateStatsUntilFrame(int32 frame) {
 
 		// More than 88.9% Of the excution goes here
     UpdateStatsForFrame(t, 1.0);
-		statistics_.update_time++;
 
     if ((!info_.use_most_recent_ivector && t % ivector_period == 0) ||
         (info_.use_most_recent_ivector && t == frame)) {
@@ -400,8 +399,8 @@ void OnlineIvectorFeature::GetAdaptationState(
 OnlineIvectorFeature::OnlineIvectorFeature(
     const OnlineIvectorExtractionInfo &info,
     OnlineFeatureInterface *base_feature):
-    resourceMonitor(), info_(info), base_(base_feature),
     statistics_(),
+    resourceMonitor(),
     info_(info), base_(base_feature),
     ivector_stats_(info_.extractor.IvectorDim(),
                    info_.extractor.PriorOffset(),
