@@ -199,10 +199,14 @@ int main(int argc, char **argv) {
 			measure_period = 0;
 		}
 		else {
+      /*
 			profile_o << "Utterance, time (s), avg power CPU (W), avg power GPU (W), energy CPU (J), energy GPU (J)";	
-			profile_o << ", num values, rnnlm time, rnnlm energy, rnnlm num execs";
+			profile_o << ", num values, rnnlm time, rnnlm energy, rnnlm num execs, rnnlm extra time";
       profile_o << ", latCompose totalTime (s), latComposeStats totalEnergy (J), latCompose rnnTime, latCompose rnnEnergy";
       profile_o << ", latComposeStats HeuristicTime, latComposeStats HeuristicEnergy";
+      profile_o << std::endl;
+      */
+      profile_o << "Utterance, GlobalTime, rnnlmTime, heuristicTime, numRnnlmExecs, rnnlmExactTime, rnnlmExtraTime";
       profile_o << std::endl;
 		}
 	}
@@ -320,25 +324,23 @@ int main(int argc, char **argv) {
 				double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
 				int numValues = resourceMonitor.numData();
 
-				double rnnlm_time, rnnlm_energy;
-				int rnnlm_num_execs;
-
-				lm_to_add_orig->GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
+        kaldi::rnnlm::RnnlmDeterministicFstStats rnnlm_stats;
+				lm_to_add_orig->GetStatistics(rnnlm_stats);	
 
 				if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
-
+/*
 				profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
 				profile_o << ", " << gpuEnergy << ", " << numValues;
-				profile_o << ", " << rnnlm_time << ", " << rnnlm_energy << ", " << rnnlm_num_execs;
-                //double computeHeuristicTime;
-                //double rnnComputationsTime;
-                //double totalTime;
-                //double computeHeuristicEnergy;
-                //double rnnComputationsEnergy;
-                //double totalEnergy;
+				profile_o << ", " << rnnlm_stats.exec_time << ", " << rnnlm_stats.energy << ", " << rnnlm_stats.rnnlm_num_executions;
+        profile_o << ", " << rnnlm_stats.extra_time;
         profile_o << ", " << latComposeStats.totalTime << ", " << latComposeStats.totalEnergy;
         profile_o << ", " << latComposeStats.rnnComputationsTime << ", " << latComposeStats.rnnComputationsEnergy;
         profile_o << ", " << latComposeStats.computeHeuristicTime << ", " << latComposeStats.computeHeuristicEnergy;
+        profile_o << std::endl;
+*/
+        profile_o << utt << ", " << elapsed;
+        profile_o << ", " << latComposeStats.rnnComputationsTime << ", " << latComposeStats.computeHeuristicTime;
+        profile_o << ", " << rnnlm_stats.rnnlm_num_executions << ", " << rnnlm_stats.execTime << ", " << rnnlm_stats.extraTime;
         profile_o << std::endl;
 			}
 

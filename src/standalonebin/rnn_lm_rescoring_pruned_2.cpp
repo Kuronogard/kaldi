@@ -389,16 +389,14 @@ int main(int argc, char **argv) {
 				double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
 				int numValues = resourceMonitor.numData();
 
-				double rnnlm_time, rnnlm_energy;
-				int rnnlm_num_execs;
-
-				new_LM_wrapped.GetStatistics(rnnlm_time, rnnlm_energy, rnnlm_num_execs);	
+        kaldi::rnnlm::RnnlmDeterministicFstStats rnnlm_stats;
+				new_LM_wrapped.GetStatistics(rnnlm_stats);	
 
 				if (numValues < 20) cerr << "WARN: less than 20 measures (" << numValues << ")" << endl; 
 
 				profile_o << utt << ", " << elapsed << ", " << cpuPower << ", " << gpuPower << ", " << cpuEnergy;
 				profile_o << ", " << gpuEnergy << ", " << numValues;
-				profile_o << ", " << rnnlm_time << ", " << rnnlm_energy << ", " << rnnlm_num_execs << endl;
+				profile_o << ", " << rnnlm_stats.execTime << ", " << rnnlm_stats.energy << ", " << rnnlm_stats.rnnlm_num_executions << endl;
 			}
 
 

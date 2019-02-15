@@ -35,6 +35,32 @@
 namespace kaldi {
 namespace rnnlm {
 
+struct RnnlmDeterministicFstStats {
+	double execTime;
+	double energy;
+	int rnnlm_num_executions;
+  double extraTime;
+
+  RnnlmDeterministicFstStats() :
+    execTime(0.0),
+    energy(0.0),
+    rnnlm_num_executions(0),
+    extraTime(0.0) {}
+
+  void copyFrom(const RnnlmDeterministicFstStats& other) {
+    execTime = other.execTime;
+    energy = other.energy;
+    rnnlm_num_executions = other.rnnlm_num_executions;
+    extraTime = other.extraTime;
+  }
+
+  RnnlmDeterministicFstStats& operator=(const RnnlmDeterministicFstStats& other) {
+    copyFrom(other);
+    return *this;
+  }
+};
+
+
 class KaldiRnnlmDeterministicFst
     : public fst::DeterministicOnDemandFst<fst::StdArc> {
  public:
@@ -47,7 +73,7 @@ class KaldiRnnlmDeterministicFst
       const RnnlmComputeStateInfo &info, double measure_period = 0.1);
   ~KaldiRnnlmDeterministicFst();
 
-	void GetStatistics(double &execTime, double &energy, int &num_executions);
+	void GetStatistics(RnnlmDeterministicFstStats& stats);
 
   void Clear();
 
@@ -79,12 +105,9 @@ class KaldiRnnlmDeterministicFst
   std::vector<RnnlmComputeState*> state_to_rnnlm_state_;
 
 	ResourceMonitorThreaded resourceMonitor;
+  RnnlmDeterministicFstStats stats_;
 
-	double accum_exec_time_;
-	double accum_energy_;
 	double measure_period_;
-	int num_network_executions_;
-
 };
 
 }  // namespace rnnlm

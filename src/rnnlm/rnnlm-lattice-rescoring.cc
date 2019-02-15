@@ -48,10 +48,7 @@ void KaldiRnnlmDeterministicFst::Clear() {
   for (int32 i = 1; i < size; i++)
     delete state_to_rnnlm_state_[i];
 
-    accum_exec_time_ = 0;
-	accum_energy_ = 0;
-	num_network_executions_ = 0;  
-    std::cout << "Clear rnnlm measurements to 0" << std::endl;
+    stats_ = RnnlmDeterministicFstStats();
 
     state_to_rnnlm_state_.resize(1);
     state_to_wseq_.resize(1);
@@ -60,7 +57,9 @@ void KaldiRnnlmDeterministicFst::Clear() {
 }
 
 KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
-    const RnnlmComputeStateInfo &info, double measure_period) : resourceMonitor(false) {
+    const RnnlmComputeStateInfo &info, double measure_period) : 
+      resourceMonitor(false),
+      stats_() {
   max_ngram_order_ = max_ngram_order;
   bos_index_ = info.opts.bos_index;
   eos_index_ = info.opts.eos_index;
@@ -72,19 +71,13 @@ KaldiRnnlmDeterministicFst::KaldiRnnlmDeterministicFst(int32 max_ngram_order,
   wseq_to_state_[bos_seq] = 0;
   start_state_ = 0;
 
-	accum_exec_time_ = 0;
-	accum_energy_ = 0;
-	num_network_executions_ = 0;
 	measure_period_ = measure_period;
 
   state_to_rnnlm_state_.push_back(decodable_rnnlm);
 }
 
-void KaldiRnnlmDeterministicFst::GetStatistics(double &execTime, double &energy, int &num_executions) {
-	execTime = accum_exec_time_;
-	energy = accum_energy_;
-	num_executions = num_network_executions_;
-    std::cout << "Read statistics" << std::endl;
+void KaldiRnnlmDeterministicFst::GetStatistics(RnnlmDeterministicFstStats& stats) {
+  stats.copyFrom(stats_);
 }
 
 
@@ -100,8 +93,9 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
                                         fst::StdArc *oarc) {
   /// At this point, we have created the state.
   KALDI_ASSERT(static_cast<size_t>(s) < state_to_wseq_.size());
+  
+  //resourceMonitor.startMonitoring(measure_period_);
 
-  std::cout << "Get arc" << std::endl;
   std::vector<Label> word_seq = state_to_wseq_[s];
   const RnnlmComputeState* rnnlm = state_to_rnnlm_state_[s];
 
@@ -123,32 +117,41 @@ bool KaldiRnnlmDeterministicFst::GetArc(StateId s, Label ilabel,
   typedef MapType::iterator IterType;
   std::pair<IterType, bool> result = wseq_to_state_.insert(wseq_state_pair);
 
+  //resourceMonitor.endMonitoring();
+  //stats_.extraTime += resourceMonitor.getTotalExecTime();
+  //resourceMonitor.clearData();
+
   // If the pair was just inserted, then also add it to state_to_* structures.
   if (result.second == true) {
 		RnnlmComputeState *rnnlm2;
 		
-		if (measure_period_ > 0) {
+		//if (measure_period_ > 0) {
 			// Measure execution time
 			// rnn executions + 1
-			resourceMonitor.startMonitoring(measure_period_);
+			//resourceMonitor.startMonitoring(measure_period_);
 			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
-			resourceMonitor.endMonitoring();
+			//resourceMonitor.endMonitoring();
 
 			//if (resourceMonitor.numData() < 50) {
 			//	cerr << "WARN: less than 50 measures inside rnnlm (" << resourceMonitor.numData() << ")" << endl;
 			//}
 
-			accum_exec_time_ += resourceMonitor.getTotalExecTime();
-			accum_energy_ += resourceMonitor.getTotalEnergyCPU();
-      resourceMonitor.clearData();
-		} else {
-			rnnlm2 = rnnlm->GetSuccessorState(ilabel);
-		}
+			//stats_.execTime += resourceMonitor.getTotalExecTime();
+			//stats_.energy += resourceMonitor.getTotalEnergyCPU();
+      //resourceMonitor.clearData();
+		//} else {
+			//rnnlm2 = rnnlm->GetSuccessorState(ilabel);
+		//}
+    stats_.rnnlm_num_executions++;
 
+    //resourceMonitor.startMonitoring(measure_period_);
     state_to_wseq_.push_back(word_seq);
     state_to_rnnlm_state_.push_back(rnnlm2);
+    //resourceMonitor.endMonitoring();
+    //stats_.extraTime += resourceMonitor.getTotalExecTime();
+    //resourceMonitor.clearData();
     //std::cout << "Num network executions + 1 " << num_network_executions_ << std::endl;
-		num_network_executions_++;
+
 	}
 
   // Creates the arc.
