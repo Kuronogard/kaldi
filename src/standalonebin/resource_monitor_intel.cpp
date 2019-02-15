@@ -6,8 +6,8 @@
 #include <string>
 
 
-void ResourceMonitorIntel::printInfo(bool verbose, std::string msg) {
-  if (verbose) {
+void ResourceMonitorIntel::printInfo(std::string msg) {
+  if (verbose_) {
     std::cerr << msg << std::endl;
   }
 }
@@ -67,9 +67,7 @@ double ResourceMonitorIntel::interval_CPU_power_est(int i, double prev_power) {
 
 ResourceMonitorIntel::ResourceMonitorIntel(bool verbose) {
   verbose_ = verbose;
-  _timestamp.clear();
-  _energyCPU.clear();
-  _powerGPU.clear();
+  clearData();
 
   probeCPU.init();
   probeGPU.init();
@@ -290,9 +288,9 @@ void ResourceMonitorIntel::asyncDataFetch() {
   probeGPU.raw2watt(&gpuRawPower, &gpuPower);
 
   _timestamp.push_back(timestamp);
-  printInfo(verbose_, "BEFORE push_back");
+  printInfo("BEFORE push_back");
   _energyCPU.push_back(cpuRawEnergy);
-  printInfo(verbose_, "AFTER push_back");
+  printInfo("AFTER push_back");
   _powerGPU.push_back(gpuPower.power);
 }
 

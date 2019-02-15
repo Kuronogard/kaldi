@@ -173,10 +173,10 @@ int main(int argc, char *argv[]) {
 
         resourceMonitor.endMonitoring();				
         double elapsed = resourceMonitor.getTotalExecTime();
-        double cpuPower = resourceMonitor.getAveragePowerCPU();
-        double gpuPower = resourceMonitor.getAveragePowerGPU();
+        //double cpuPower = resourceMonitor.getAveragePowerCPU();
+        //double gpuPower = resourceMonitor.getAveragePowerGPU();
         double cpuEnergy = resourceMonitor.getTotalEnergyCPU();
-        double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
+        //double gpuEnergy = resourceMonitor.getTotalEnergyGPU();
         int numValues = resourceMonitor.numData();
 
         if (numValues < 20) KALDI_WARN << "Less than 20 measures (" << numValues << ")";

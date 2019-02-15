@@ -53,7 +53,7 @@ private:
 	//bool firstRead();
 	//void setFirstRead(bool value);
 
-  void printInfo(bool verbose, std::string msg);
+  void printInfo(std::string msg);
 	double timeInterval(struct timeval start, struct timeval end);
 	double interval_GPU_power(int i);
 	double interval_CPU_power(int i);

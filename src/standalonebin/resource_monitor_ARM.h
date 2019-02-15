@@ -7,6 +7,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
+#include <string>
 
 #include "standalonebin/probeARM.h"
 
@@ -16,16 +18,8 @@ using namespace std;
 class ResourceMonitorARM {
 
 public:
-	ResourceMonitorARM();
+	ResourceMonitorARM(bool verbose = false);
 	~ResourceMonitorARM();
-
-	void startMonitoring(double seconds);
-	void endMonitoring();
-
-	void startMonitoringNoThread();
-	void endMonitoringNoThread();
-	
-	void init();
 
 	double getTotalEnergyCPU();
 	double getTotalEnergyGPU();
@@ -37,36 +31,24 @@ public:
 	void getPowerGPU(vector<double> &timestamp, vector<double> &power);
 	void getPower(vector<double> &timestamp, vector<double> &powerCPU, vector<double> &powerGPU);
 
+  void asyncDataFetch();
+
 	int numData();
 	bool hasData();
+  void clearData();
 
 
 private:
 
 	ProbeARM probeARM;
 
-	bool initialized;
-	bool running;
-	bool runningNoThread;
-	pthread_mutex_t lock;
-	bool end_monitoring;
-	pthread_t monitor_thread;
-
-	struct timeval _startTime;
-	struct timeval _endTime;
-	struct timezone _timeZone;
+  bool verbose_;
 
 	vector<timeval> _timestamp;
 	vector<double> _powerCPU;
 	vector<double> _powerGPU;
 
-
-	useconds_t measure_period;
-
-	static void * background_monitor_handler(void * args);
-	bool monitorMustEnd();
-	void setEndMonitor(bool value);
-
+  void printInfo(std::string msg);
 	double timeInterval(struct timeval start, struct timeval end);
 	double interval_GPU_power(int i);
 	double interval_CPU_power(int i);

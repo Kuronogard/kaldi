@@ -2,8 +2,16 @@
 
 #include <sys/time.h>
 #include <iostream>
+#include <string>
 #include <pthread.h>
 #include <unistd.h>
+
+
+void ResourceMonitorARM::printInfo(std::string msg) {
+  if (verbose_) {
+    std::cerr << msg << std::endl;
+  }
+}
 
 
 int ResourceMonitorARM::numData() {
@@ -12,6 +20,13 @@ int ResourceMonitorARM::numData() {
 
 bool ResourceMonitorARM::hasData() {
 	return _timestamp.size() > 0;
+}
+
+
+void ResourceMonitorARM::clearData() {
+  _timestamp.clear();
+  _powerCPU.clear();
+  _powerGPU.clear();
 }
 
 
@@ -25,144 +40,30 @@ double ResourceMonitorARM::interval_CPU_power(int i) {
 }
 
 
-ResourceMonitorARM::ResourceMonitorARM() {
-	running = false;
-	runningNoThread = false;
-	initialized = false;
-	pthread_mutex_init(&lock, NULL);
-}
 
-ResourceMonitorARM::~ResourceMonitorARM() {
-	pthread_mutex_destroy(&lock);
+ResourceMonitorARM::ResourceMonitorARM(bool verbose) {
+  verbose_ = verbose;
+  clearData();
 
+  probeARM.init();
 }
 
 
-/**
- * Initialize the monitoring object, trying to access each relevant
- * system
- */
-void ResourceMonitorARM::init() {
-
-	if (initialized) {
-		cerr << "WARN: Tried to reinitialize resorce monitor. " << endl;
-		cerr << "Doing nothing..." << endl;
-		return;
-	}
-
-	_timestamp.clear();
-	_powerCPU.clear();
-	_powerGPU.clear();
-
-	probeARM.init();
-
-	initialized = true;
-}
+ResourceMonitorARM::~ResourceMonitorARM() {}
 
 
-void ResourceMonitorARM::startMonitoringNoThread() {
+void ResourceMonitorARM::asyncDataFetch() {
 
-	if (running) {
-		cerr << "WARN: Resource Monitor is already running (in Thread mode)." << endl;
-		cerr << "Doing Nothing..." << endl;
-		return;
-	}
+  timeval timestamp;
+  double cpuPower, gpuPower;
 
-	if (runningNoThread) {
-		cerr << "WARN: Resource Monitor is already running." << endl;
-		cerr << "Doing Nothing..." << endl;
-		return;
-	}
+  gettimeofday(&timestamp, NULL);
+  cpuPower = probeARM.fetchPowerCPU();
+  gpuPower = probeARM.fetchPowerGPU();
 
-	_timestamp.clear();
-	_powerCPU.clear();
-	_powerGPU.clear();
-
-	runningNoThread = true;
-
-	gettimeofday(&_startTime, NULL);
-
-	timeval timestamp;
-	double cpuPower, gpuPower;
-
-	// Check time
-	gettimeofday(&timestamp, NULL);		
-
-	// Check CPU power
-	cpuPower = probeARM.fetchPowerCPU();
-
-	// Check GPU power
-	gpuPower = probeARM.fetchPowerGPU();
-
-	_timestamp.push_back(timestamp);
-	_powerCPU.push_back(cpuPower);
-	_powerGPU.push_back(gpuPower);
-}
-
-
-void ResourceMonitorARM::startMonitoring(double seconds) {
-	
-	if (running) {
-		cerr << "WARN: Resource Monitor is already running" << endl;
-		cerr << "Doing nothing..." << endl;
-		return;
-	}
-
-	_timestamp.clear();
-	_powerCPU.clear();
-	_powerGPU.clear();
-
-	measure_period = seconds * 1000000;
-	setEndMonitor(false);
-	running = true;
-
-	gettimeofday(&_startTime, NULL);
-	pthread_create(&monitor_thread, NULL, &background_monitor_handler, (void*)this);
-}
-
-
-void ResourceMonitorARM::endMonitoringNoThread() {
-
-	if (!runningNoThread) {
-		cerr << "WARN: Tried to end monitoring, but it was not running" << endl;
-		cerr << "Doing Nothing" << endl;
-		return;
-	}
-
-	gettimeofday(&_endTime, NULL);
-
-	timeval timestamp;
-	double cpuPower, gpuPower;
-
-	// Check time
-	gettimeofday(&timestamp, NULL);		
-
-	// Check CPU power
-	cpuPower = probeARM.fetchPowerCPU();
-
-	// Check GPU power
-	gpuPower = probeARM.fetchPowerGPU();
-
-	_timestamp.push_back(timestamp);
-	_powerCPU.push_back(cpuPower);
-	_powerGPU.push_back(gpuPower);
-
-	runningNoThread = false;
-}
-
-void ResourceMonitorARM::endMonitoring() {
-
-	if (!running) {
-		cerr << "WARN: Tried to end monitoring. But it was not running" << endl;
-		cerr << "Doing nothing" << endl;
-		return;
-	}
-
-	gettimeofday(&_endTime, NULL);
-	setEndMonitor(true);
-
-	pthread_join(monitor_thread, NULL);
-	running = false;
+  _timestamp.push_back(timestamp);
+  _powerCPU.push_back(cpuPower);
+  _powerGPU.push_back(gpuPower);
 }
 
 
@@ -172,8 +73,8 @@ void ResourceMonitorARM::endMonitoring() {
  */
 double ResourceMonitorARM::getTotalEnergyCPU() {
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return 0;
 	}
 
@@ -205,8 +106,8 @@ double ResourceMonitorARM::getTotalEnergyGPU() {
 	// starting and the ending power of the interval
 	// Compute energy for each interval and sum all of them
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return 0;
 	}
 
@@ -227,20 +128,20 @@ double ResourceMonitorARM::getTotalEnergyGPU() {
 
 double ResourceMonitorARM::getTotalExecTime() {
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return 0;
 	}
 
-	//return timeInterval(_timestamp.front(), _timestamp.back());
-	return timeInterval(_startTime, _endTime);
+	return timeInterval(_timestamp.front(), _timestamp.back());
+	//return timeInterval(_startTime, _endTime);
 }
 
 
 double ResourceMonitorARM::getAveragePowerCPU() {
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return 0;
 	}
 
@@ -258,8 +159,8 @@ double ResourceMonitorARM::getAveragePowerCPU() {
 
 double ResourceMonitorARM::getAveragePowerGPU() {	
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return 0;
 	}
 
@@ -280,24 +181,24 @@ void ResourceMonitorARM::getPowerCPU(vector<double> &timestamp, vector<double> &
 	timestamp.clear();
 	power.clear();
 
-	if (!hasData()) {
-		cerr << "WARN: getPowerCPU not implemented" << endl;
-		cerr << "WARN: No data in resource monitor" << endl;
+  cerr << "WARN: getPowerCPU not implemented" << endl;
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return;
 	}
-
 }
 
 void ResourceMonitorARM::getPowerGPU(vector<double> &timestamp, vector<double> &power) {
 	timestamp.clear();
 	power.clear();
 
-	if (!hasData()) {
-		cerr << "WARN: getPowerGPU not implemented" << endl;
-		cerr << "WARN: No data in resource monitor" << endl;
+  cerr << "WARN: getPowerGPU not implemented" << endl;
+
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return;
 	}
-
 }
 
 /**
@@ -314,8 +215,8 @@ void ResourceMonitorARM::getPower(vector<double> &timestamp, vector<double> &pow
 	powerCPU.clear();
 	powerGPU.clear();
 
-	if (!hasData()) {
-		cerr << "WARN: No data in resource monitor" << endl;
+	if (numData() < 2) {
+		cerr << "WARN: You need at least two measurements." << endl;
 		return;
 	}
 
@@ -326,62 +227,6 @@ void ResourceMonitorARM::getPower(vector<double> &timestamp, vector<double> &pow
 		powerCPU.push_back(interval_CPU_power(i));
 	}
 
-}
-
-
-
-void * ResourceMonitorARM::background_monitor_handler(void * arg) {
-
-	if (arg == NULL)
-		pthread_exit(NULL);
-
-	ResourceMonitorARM *parent = (ResourceMonitorARM*)arg;
-	useconds_t wait_time = parent->measure_period;
-
-	while(!parent->monitorMustEnd()) {
-		timeval timestamp;
-		double cpuPower, gpuPower;
-
-		// Check time
-		gettimeofday(&timestamp, NULL);		
-
-		// Check CPU power
-		cpuPower = parent->probeARM.fetchPowerCPU();
-
-		// Check GPU power
-		gpuPower = parent->probeARM.fetchPowerGPU();
-
-		parent->_timestamp.push_back(timestamp);
-		parent->_powerCPU.push_back(cpuPower);
-		parent->_powerGPU.push_back(gpuPower);
-
-		usleep(wait_time);
-	}
-
-	// Last measurement to garantee that all the
-	//gettimeofday(&timestamp, NULL);
-	//cpuPower = parent->probeARM.fetchPowerCPU();
-	//gpuPower = parent->probeARM.fetchPowerGPU();
-	//parent->_timestamp.push_back(timestamp);
-	//parent->_powerCPU.push_back(cpuPower);
-	//parent->_powerGPU.push_bak(gpuPower);
-
-	pthread_exit(NULL);
-}
-
-bool ResourceMonitorARM::monitorMustEnd() {
-	bool value;
-	pthread_mutex_lock(&lock);
-	value = end_monitoring;
-	pthread_mutex_unlock(&lock);
-
-	return value;
-}
-
-void ResourceMonitorARM::setEndMonitor(bool value) {
-	pthread_mutex_lock(&lock);
-	end_monitoring = value;
-	pthread_mutex_unlock(&lock);
 }
 
 
