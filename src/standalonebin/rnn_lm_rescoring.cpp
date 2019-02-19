@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 	std::string quant_log = "";
 	std::string use_gpu = "yes";
 	std::string profile = "";
+  std::string lat_wspecifier = "";
 	double measure_period = 0.1;
 	double rnnlm_measure_period = 0.001;
 	bool quantize = false;
@@ -86,6 +87,8 @@ int main(int argc, char **argv) {
 	po.Register("measure-period", &measure_period, "Time between energy measurements");
 	po.Register("rnnlm-measure-period", &rnnlm_measure_period, "Time between energy measurements for internal rnn evaluations");
 	po.Register("quantize", &quantize, "Quantize network");
+  po.Register("lat-wspecifier", &lat_wspecifier, "If specified, it will be used to output the rescored lattice");
+
 
 	opts.Register(&po);
   compose_pruned_opts.Register(&po);
@@ -169,6 +172,12 @@ int main(int argc, char **argv) {
   // read lattice (Normal lattice)
 	SequentialCompactLatticeReader clattice_reader(lats_rspecifier);
 
+  CompactLatticeWriter clattice_writer;
+  if (lat_wspecifier != "") {
+    clattice_writer.Open(lat_wspecifier);
+  }
+
+
 	// create transcription writter and symbol-table reader objects
 	Int32VectorWriter trans_writer(transcription_wspecifier);
 
@@ -236,6 +245,14 @@ int main(int argc, char **argv) {
 
 			//lm_to_add_orig->Clear();
 
+			//double rescore_elapsed = rescore_timer.Elapsed();
+			resourceMonitor.endMonitoring();
+
+
+      if (clattice_writer.IsOpen()) {
+        clattice_writer.Write(utt, composed_clat);
+      }
+
 			if (composed_clat.NumStates() == 0) {
 				num_fail++;
 			}
@@ -243,9 +260,6 @@ int main(int argc, char **argv) {
 				fst::ScaleLattice(fst::AcousticLatticeScale(1.0/acoustic_scale), &composed_clat);
 				num_success++;
 			}
-
-			//double rescore_elapsed = rescore_timer.Elapsed();
-			resourceMonitor.endMonitoring();
 
 			// ---------------------------------------------------
 			//		Compute Best Path
