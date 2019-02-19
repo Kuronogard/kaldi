@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
       profile_o << std::endl;
       */
       profile_o << "Utterance, GlobalTime, rnnlmTime, heuristicTime, numRnnlmExecs, rnnlmExactTime, rnnlmExtraTime";
+      profile_o << ", cpuGlobalEnergy, gpuGlobalEnergy, rnnlmExternalEnergy, rnnlmInternalEnergy";
       profile_o << std::endl;
 		}
 	}
@@ -352,6 +353,7 @@ int main(int argc, char **argv) {
         profile_o << utt << ", " << elapsed;
         profile_o << ", " << latComposeStats.rnnComputationsTime << ", " << latComposeStats.computeHeuristicTime;
         profile_o << ", " << rnnlm_stats.rnnlm_num_executions << ", " << rnnlm_stats.execTime << ", " << rnnlm_stats.extraTime;
+        profile_o << ", " << cpuEnergy << ", " << gpuEnergy << ", " << latComposeStats.rnnComputationsEnergy << ", " << rnnlm_stats.energy;
         profile_o << std::endl;
 			}
 
