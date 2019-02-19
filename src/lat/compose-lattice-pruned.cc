@@ -920,16 +920,12 @@ void PrunedCompactLatticeComposer::Compose() {
   resourceMonitor.startMonitoring(opts_.measure_period);
   
   ComputeLatticeStateInfo();
-  std::cerr << "After compute state info" << std::endl;
   AddFirstState();
-  std::cerr << "after add first state" << std::endl;
   // while (we have not reached final state  ||
   //        num-arcs produced < target num-arcs) { ...
   while (output_best_cost_ == std::numeric_limits<double>::infinity() ||
          num_arcs_out_ < opts_.max_arcs) {
-    std::cerr << "Before Pruning Composer" << std::endl;
     RecomputePruningInfo();
-    std::cerr << "After Pruning Composer" << std::endl;
     int32 this_iter_arc_limit = GetCurrentArcLimit();
     while (num_arcs_out_ < this_iter_arc_limit &&
            !composed_state_queue_.empty()) {
@@ -991,8 +987,6 @@ void ComposeCompactLatticePruned(
 
   PrunedCompactLatticeComposer composer(opts, clat, det_fst, composed_clat);
   composer.Compose();
-  std::cerr << "Before Rescoring Outside" << std::endl;
-
   
   if (stats != NULL) {
     composer.getStatistics(*stats);
