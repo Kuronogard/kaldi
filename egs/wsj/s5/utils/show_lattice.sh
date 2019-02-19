@@ -22,10 +22,18 @@ words=$3
 
 tmpdir=$(mktemp -d /tmp/kaldi.XXXX); # trap "rm -r $tmpdir" EXIT # cleanup
 
-gunzip -c $lat | lattice-to-fst --lm-scale=$lm_scale --acoustic-scale=$acoustic_scale ark:- "scp,p:echo $uttid $tmpdir/$uttid.fst|" || exit 1;
+filename=$(basename -- "$lat")
+extension="${filename##*.}"
+
+if [ $extension == "gz" ]; then
+  gunzip -c $lat | lattice-to-fst --lm-scale=$lm_scale --acoustic-scale=$acoustic_scale ark:- "scp,p:echo $uttid $tmpdir/$uttid.fst|" || exit 1;
+else
+  lattice-to-fst --lm-scale=$lm_scale --acoustic-scale=$acoustic_scale ark:${lat} "scp,p:echo $uttid $tmpdir/$uttid.fst|" || exit 1;
+fi
+
 ! [ -s $tmpdir/$uttid.fst ] && \
   echo "Failed to extract lattice for utterance $uttid (not present?)" && exit 1;
-fstdraw --portrait=true --osymbols=$words $tmpdir/$uttid.fst | dot -T${format} > $tmpdir/$uttid.${format}
+fstdraw --allow_negative_labels=true --portrait=true --osymbols=$words $tmpdir/$uttid.fst | dot -T${format} > $tmpdir/$uttid.${format}
 
 if [ "$(uname)" == "Darwin" ]; then
     doc_open=open
