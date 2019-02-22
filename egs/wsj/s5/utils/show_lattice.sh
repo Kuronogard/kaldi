@@ -8,8 +8,8 @@ acoustic_scale=0.0
 
 . utils/parse_options.sh
 
-if [ $# != 3 ]; then
-   echo "usage: $0 [--mode display|save] [--format pdf|svg] <utt-id> <lattice-ark> <word-list>"
+if [ $# -lt 3 ]; then
+   echo "usage: $0 [--mode display|save] [--format pdf|svg] <utt-id> <lattice-ark> <word-list> [output-path]"
    echo "e.g.:  $0 utt-0001 \"test/lat.*.gz\" tri1/graph/words.txt"
    exit 1;
 fi
@@ -19,6 +19,12 @@ fi
 uttid=$1
 lat=$2
 words=$3
+out_dir="."
+
+if [ "$#" -ge 4 ]; then
+ out_dir=$4
+fi
+
 
 tmpdir=$(mktemp -d /tmp/kaldi.XXXX); # trap "rm -r $tmpdir" EXIT # cleanup
 
@@ -46,6 +52,6 @@ fi
 
 [ $mode == "display" ] && $doc_open $tmpdir/$uttid.${format}
 [[ $mode == "display" && $? -ne 0 ]] && echo "Failed to open ${format} format." && mode=save
-[ $mode == "save" ] && echo "Saving to $uttid.${format}" && cp $tmpdir/$uttid.${format} .
+[ $mode == "save" ] && echo "Saving to $uttid.${format}" && cp $tmpdir/$uttid.${format} ${out_dir}
 
 exit 0

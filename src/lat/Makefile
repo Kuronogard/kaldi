@@ -11,7 +11,7 @@ TESTFILES = kaldi-lattice-test push-lattice-test minimize-lattice-test \
 OBJFILES = kaldi-lattice.o lattice-functions.o word-align-lattice.o \
 	   phone-align-lattice.o word-align-lattice-lexicon.o sausages.o \
        push-lattice.o minimize-lattice.o determinize-lattice-pruned.o \
-       confidence.o compose-lattice-pruned.o
+       confidence.o compose-lattice-pruned.o compose-lattice-pruned-accel.o
 
 LIBNAME = kaldi-lat
 
